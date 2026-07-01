@@ -1,0 +1,2866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Swing Lab — Swing Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0D10;
+    --panel:#15181C;
+    --panel-2:#1B1F24;
+    --line:#2A2F35;
+    --text:#F2EFEA;
+    --text-dim:#9AA0A6;
+    --text-faint:#5C636B;
+    --clay:#C1602E;
+    --clay-dim:#7A4023;
+    --grass:#5C8A6E;
+    --blue:#3FA7FF;
+    --stitch:#A23B3B;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  ::selection{background:var(--clay);color:#fff;}
+
+  /* ---------- stitch motif ---------- */
+  .stitch-divider{
+    height:14px;
+    margin:0 0;
+    background-image: repeating-linear-gradient(
+      100deg,
+      transparent 0px, transparent 10px,
+      var(--clay-dim) 10px, var(--clay-dim) 11px,
+      transparent 11px, transparent 16px
+    ),
+    repeating-linear-gradient(
+      80deg,
+      transparent 0px, transparent 10px,
+      var(--clay-dim) 10px, var(--clay-dim) 11px,
+      transparent 11px, transparent 16px
+    );
+    background-position: 0 4px, 0 9px;
+    background-size: 22px 2px;
+    opacity:.55;
+  }
+
+  header{
+    padding:28px 32px 18px;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--clay);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:32px;
+    letter-spacing:.01em;
+    margin:0;
+    text-transform:uppercase;
+  }
+  .sub{
+    color:var(--text-dim);
+    font-size:14px;
+    margin-top:6px;
+    max-width:680px;
+    line-height:1.5;
+  }
+
+  main{
+    max-width:1180px;
+    margin:0 auto;
+    padding:28px 32px 80px;
+  }
+
+  /* ---------- upload zone ---------- */
+  .upload-zone{
+    border:1.5px dashed var(--line);
+    border-radius:var(--radius);
+    padding:36px;
+    text-align:center;
+    background:var(--panel);
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .upload-zone:hover, .upload-zone.drag{
+    border-color:var(--clay);
+    background:var(--panel-2);
+  }
+  .upload-zone h3{
+    font-family:'Oswald', sans-serif;
+    font-weight:500;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin:0 0 6px;
+    font-size:18px;
+  }
+  .upload-zone p{color:var(--text-dim); font-size:13px; margin:0;}
+  input[type=file]{display:none;}
+
+  .setup-row{
+    display:flex;
+    gap:14px;
+    align-items:center;
+    margin-top:18px;
+    flex-wrap:wrap;
+  }
+  .setup-row .label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+  .seg{
+    display:flex;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .seg button{
+    background:var(--panel);
+    color:var(--text-dim);
+    border:none;
+    padding:8px 16px;
+    font-family:'Inter';
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .seg button + button{border-left:1px solid var(--line);}
+  .seg button.active{background:var(--clay); color:#fff;}
+
+  .btn{
+    background:var(--clay);
+    color:#fff;
+    border:none;
+    padding:10px 20px;
+    border-radius:8px;
+    font-family:'Inter';
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+    letter-spacing:.02em;
+    transition:filter .15s, opacity .15s;
+  }
+  .btn:hover{filter:brightness(1.1);}
+  .btn:disabled{opacity:.35; cursor:not-allowed;}
+  .btn.ghost{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--text-dim);
+  }
+  .btn.ghost:hover{border-color:var(--text-dim); color:var(--text);}
+
+  /* ---------- workspace ---------- */
+  #workspace{display:none;}
+  .video-panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .video-stage{
+    position:relative;
+    background:#000;
+    display:flex;
+    justify-content:center;
+  }
+  .video-stage video, .video-stage canvas{
+    max-width:100%;
+    max-height:62vh;
+    display:block;
+  }
+  .video-stage canvas{position:absolute; top:0; left:0; pointer-events:auto; touch-action:none;}
+
+  .transport-row{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:12px 18px;
+    border-top:1px solid var(--line);
+  }
+  .transport-row button{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    width:34px; height:34px;
+    border-radius:7px;
+    cursor:pointer;
+    font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .transport-row button:hover{border-color:var(--clay);}
+  .time-readout{
+    font-family:'JetBrains Mono'; font-size:12px; color:var(--text-dim); min-width:72px;
+  }
+  .btn.ghost.view-btn.active{
+    background:var(--clay); color:#fff; border-color:var(--clay);
+  }
+
+  .scrub-wrap{
+    position:relative;
+    padding:0 18px 18px;
+  }
+  .scrub-track{
+    position:relative;
+    height:34px;
+    background:var(--panel-2);
+    border-radius:6px;
+    border:1px solid var(--line);
+    cursor:pointer;
+  }
+  .scrub-fill{
+    position:absolute; left:0; top:0; bottom:0;
+    background:linear-gradient(90deg, var(--clay-dim), var(--clay));
+    border-radius:6px 0 0 6px;
+    pointer-events:none;
+    opacity:.5;
+  }
+  .pin{
+    position:absolute;
+    top:-8px;
+    width:14px; height:48px;
+    transform:translateX(-50%);
+    cursor:ew-resize;
+    z-index:5;
+  }
+  .pin::before{
+    content:'';
+    position:absolute;
+    left:50%; top:8px; bottom:0;
+    width:2px;
+    transform:translateX(-50%);
+    background:var(--pin-color, var(--blue));
+  }
+  .pin::after{
+    content:attr(data-label);
+    position:absolute;
+    top:-8px; left:50%;
+    transform:translateX(-50%);
+    background:var(--pin-color, var(--blue));
+    color:#0B0D10;
+    font-family:'JetBrains Mono';
+    font-size:9px;
+    font-weight:700;
+    letter-spacing:.04em;
+    padding:2px 5px;
+    border-radius:3px;
+    white-space:nowrap;
+  }
+  .pin-dot{
+    position:absolute; left:50%; top:6px;
+    width:9px; height:9px; border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:var(--pin-color, var(--blue));
+    border:2px solid #0B0D10;
+  }
+  .legend{
+    display:flex; gap:16px; flex-wrap:wrap;
+    padding:0 18px 16px;
+    font-family:'JetBrains Mono'; font-size:10.5px; color:var(--text-dim);
+  }
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .legend i{width:8px;height:8px;border-radius:50%; display:inline-block;}
+
+  .hint{
+    padding:0 18px 16px;
+    font-size:12px;
+    color:var(--text-faint);
+    line-height:1.5;
+  }
+
+  /* ---------- progress ---------- */
+  .progress-wrap{
+    margin-top:18px;
+    display:none;
+  }
+  .progress-label{
+    font-family:'JetBrains Mono'; font-size:11px; color:var(--text-dim);
+    margin-bottom:8px; letter-spacing:.05em;
+  }
+  .progress-bar{
+    height:6px; background:var(--panel-2); border-radius:4px; overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .progress-fill{
+    height:100%; width:0%;
+    background:var(--clay);
+    transition:width .15s linear;
+  }
+  .progress-fill.error{ background:var(--stitch); width:100% !important; }
+  .progress-label.error{ color:var(--stitch); }
+  .progress-label.spin::before{
+    content:'';
+    display:inline-block;
+    width:9px; height:9px;
+    margin-right:8px;
+    border-radius:50%;
+    border:1.5px solid var(--clay-dim);
+    border-top-color:var(--clay);
+    animation:spin .7s linear infinite;
+    vertical-align:middle;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .retry-btn{display:none; margin-top:10px;}
+
+  /* ---------- dashboard ---------- */
+  #dashboard{display:none; margin-top:36px;}
+  .section-head{
+    display:flex; align-items:baseline; gap:10px;
+    margin:0 0 14px;
+  }
+  .section-head .num{
+    font-family:'Oswald'; font-weight:600; color:var(--clay); font-size:13px;
+  }
+  .section-head h2{
+    font-family:'Oswald'; font-weight:500; text-transform:uppercase; letter-spacing:.03em;
+    font-size:16px; margin:0; color:var(--text);
+  }
+  .section-head .note{
+    color:var(--text-faint); font-size:11.5px; margin-left:auto; font-family:'JetBrains Mono';
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
+    gap:12px;
+    margin-bottom:34px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 18px;
+  }
+  .card .label{
+    font-family:'JetBrains Mono'; font-size:10.5px; letter-spacing:.06em;
+    color:var(--text-dim); text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .card .value{
+    font-family:'JetBrains Mono'; font-weight:700;
+    font-size:30px; color:var(--text);
+    line-height:1;
+  }
+  .card .value .unit{
+    font-size:14px; font-weight:500; color:var(--text-dim); margin-left:4px;
+  }
+  .card .sub{
+    margin-top:8px; font-size:11.5px; color:var(--text-faint); line-height:1.4;
+  }
+  .card.split{
+    display:flex; gap:18px;
+  }
+  .card.split .col{flex:1;}
+  .card.split .col .value{font-size:22px;}
+  .card.flag-good{border-color:#3a5944;}
+  .card.flag-warn{border-color:var(--stitch);}
+
+  .chart-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 20px 12px;
+    margin-bottom:34px;
+  }
+  .chart-card .label{
+    font-family:'JetBrains Mono'; font-size:10.5px; letter-spacing:.06em;
+    color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;
+  }
+
+  .tabbar{
+    max-width:1180px; margin:0 auto; padding:18px 32px 0;
+  }
+
+  .baseline-row{
+    display:flex; align-items:center; gap:14px;
+    padding:12px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .baseline-row:last-child{border-bottom:none;}
+  .baseline-row .name{
+    font-family:'Inter'; font-weight:600; font-size:13.5px; color:var(--text);
+  }
+  .baseline-row .date{
+    font-family:'JetBrains Mono'; font-size:11px; color:var(--text-faint);
+  }
+  .baseline-row .stats{
+    display:flex; gap:16px; margin-left:auto;
+    font-family:'JetBrains Mono'; font-size:11.5px; color:var(--text-dim);
+  }
+  .baseline-row .remove-btn{
+    background:transparent; border:1px solid var(--line); color:var(--text-faint);
+    width:26px; height:26px; border-radius:6px; cursor:pointer; font-size:14px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .baseline-row .remove-btn:hover{ border-color:var(--stitch); color:var(--stitch); }
+
+  .add-baseline-bar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 18px; margin:26px 0 8px;
+  }
+  .add-baseline-bar input[type=text]{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    border-radius:7px; padding:9px 12px; font-family:'Inter'; font-size:13px;
+    flex:1; min-width:160px;
+  }
+  .add-baseline-bar input[type=text]:focus{ outline:none; border-color:var(--clay); }
+  .confirm{
+    font-family:'JetBrains Mono'; font-size:11.5px; color:var(--grass);
+    opacity:0; transition:opacity .2s;
+  }
+  .confirm.show{ opacity:1; }
+
+  .manual-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
+    gap:14px;
+  }
+  .manual-grid label{
+    display:flex; flex-direction:column; gap:6px;
+    font-family:'JetBrains Mono'; font-size:10.5px; letter-spacing:.04em;
+    color:var(--text-dim); text-transform:uppercase;
+  }
+  .manual-grid input, .manual-grid select{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    border-radius:7px; padding:9px 10px; font-family:'Inter'; font-size:13px;
+    text-transform:none; letter-spacing:normal;
+  }
+  .manual-grid input:focus, .manual-grid select:focus{ outline:none; border-color:var(--clay); }
+
+  .focus-card{
+    background:var(--panel); border:1px solid var(--stitch); border-radius:var(--radius);
+    padding:18px 20px; margin-bottom:16px;
+  }
+  .focus-card .focus-head{
+    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px;
+  }
+  .focus-card .focus-head h3{
+    font-family:'Oswald'; font-weight:500; text-transform:uppercase; letter-spacing:.02em;
+    font-size:15px; margin:0; color:var(--text);
+  }
+  .focus-card .focus-stat{
+    font-family:'JetBrains Mono'; font-size:11.5px; color:var(--text-dim); margin-left:auto;
+  }
+  .focus-card .focus-note{ font-size:12px; color:var(--text-faint); margin-bottom:14px; }
+  .drill-item{
+    padding:12px 0; border-top:1px solid var(--line);
+  }
+  .drill-item:first-child{ border-top:none; }
+  .drill-item .drill-name{
+    font-family:'Inter'; font-weight:600; font-size:13.5px; color:var(--text);
+  }
+  .drill-item .drill-source{
+    font-family:'JetBrains Mono'; font-size:10px; color:var(--clay); text-transform:uppercase; letter-spacing:.04em;
+    margin-left:8px;
+  }
+  .drill-item .drill-desc{
+    font-size:12.5px; color:var(--text-dim); margin-top:4px; line-height:1.5;
+  }
+  .drill-pick{
+    display:flex; gap:11px; align-items:flex-start;
+    padding:11px 0; border-top:1px solid var(--line); cursor:pointer;
+  }
+  .drill-pick:first-of-type{ border-top:none; }
+  .drill-pick input[type=checkbox]{
+    margin-top:2px; width:16px; height:16px; flex-shrink:0; cursor:pointer;
+    accent-color:var(--clay);
+  }
+  .drill-pick .drill-name{ font-family:'Inter'; font-weight:600; font-size:13.5px; color:var(--text); }
+  .drill-pick .drill-source{
+    font-family:'JetBrains Mono'; font-size:10px; color:var(--clay); text-transform:uppercase; letter-spacing:.04em; margin-left:8px;
+  }
+  .drill-pick .drill-desc{ display:block; font-size:12.5px; color:var(--text-dim); margin-top:4px; line-height:1.5; }
+  .on-target-row{
+    display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono'; font-size:12px; color:var(--text-dim);
+  }
+  .on-target-row:last-child{ border-bottom:none; }
+  .on-target-row i{ width:7px;height:7px;border-radius:50%; background:var(--grass); display:inline-block; flex-shrink:0; }
+
+  .client-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px 20px; margin-bottom:14px;
+  }
+  .client-card .client-head{
+    display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;
+  }
+  .client-card .client-head h3{
+    font-family:'Oswald'; font-weight:500; text-transform:uppercase; letter-spacing:.02em;
+    font-size:16px; margin:0; color:var(--text);
+  }
+  .client-card .client-count{
+    font-family:'JetBrains Mono'; font-size:11px; color:var(--text-dim);
+  }
+  .client-card .client-toggle{
+    margin-left:auto; color:var(--text-faint); font-family:'JetBrains Mono'; font-size:11px;
+  }
+  .client-card .client-remove{
+    background:transparent; border:1px solid var(--line); color:var(--text-faint);
+    border-radius:6px; padding:5px 10px; font-size:11px; cursor:pointer; font-family:'JetBrains Mono';
+  }
+  .client-card .client-remove:hover{ border-color:var(--stitch); color:var(--stitch); }
+  .client-swings{ margin-top:14px; display:none; }
+  .client-swings.open{ display:block; }
+  .client-swing-row{
+    padding:11px 0; border-top:1px solid var(--line);
+  }
+  .client-swing-row:first-child{ border-top:none; }
+  .client-swing-row .csr-top{
+    display:flex; align-items:center; gap:10px;
+  }
+  .client-swing-row .csr-date{
+    font-family:'JetBrains Mono'; font-size:11px; color:var(--text-faint);
+  }
+  .client-swing-row .csr-stats{
+    display:flex; gap:12px; flex-wrap:wrap; margin-top:5px;
+    font-family:'JetBrains Mono'; font-size:11px; color:var(--text-dim);
+  }
+  .rx-block{
+    background:var(--panel-2); border:1px solid var(--stitch); border-radius:8px;
+    padding:12px 14px; margin-bottom:16px;
+  }
+  .rx-head{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .rx-label{
+    font-family:'JetBrains Mono'; font-size:10.5px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--clay);
+  }
+  .rx-saved{ font-size:10.5px; }
+  .rx-textarea{
+    width:100%; min-height:110px; resize:vertical;
+    background:var(--panel); border:1px solid var(--line); border-radius:7px;
+    color:var(--text); padding:10px 12px; font-family:'JetBrains Mono'; font-size:12px;
+    line-height:1.55; white-space:pre-wrap;
+  }
+  .rx-textarea:focus{ outline:none; border-color:var(--clay); }
+  .rx-textarea::placeholder{ color:var(--text-faint); }
+
+  footer{
+    max-width:1180px; margin:0 auto; padding:0 32px 60px;
+    color:var(--text-faint); font-size:11.5px; line-height:1.6;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">WRK-APP MODULE</div>
+  <h1>Swing Lab</h1>
+  <div class="sub">Upload a slow-motion swing video. Pose tracking finds the body, estimates load / foot plant / contact / extension, and measures rotation, separation, and posture from the 2D footage. Keep camera angle and distance consistent across every swing you log — that's what makes the numbers comparable.</div>
+</header>
+
+<div class="tabbar">
+  <div class="seg" id="mainTabs">
+    <button data-tab="analyze" class="active">Analyze</button>
+    <button data-tab="baseline">Baseline</button>
+    <button data-tab="clients">Clients</button>
+    <button data-tab="drills">Drills</button>
+  </div>
+</div>
+
+<main>
+
+<div id="analyzeTab">
+
+  <div id="uploadStage">
+    <div class="upload-zone" id="dropZone">
+      <h3>Drop a swing video, or click to browse</h3>
+      <p>MP4 / MOV — slow-motion, side or face-on view, full body in frame</p>
+      <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.qt,video/quicktime,video/mp4" />
+    </div>
+
+    <div class="setup-row">
+      <span class="label">Front (stride) foot is on screen side:</span>
+      <div class="seg" id="sideSeg">
+        <button data-side="left" class="active">Left</button>
+        <button data-side="right">Right</button>
+      </div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label" id="progressLabel">Loading pose model…</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <button class="btn ghost retry-btn" id="retryBtn">Try a different video</button>
+    </div>
+  </div>
+
+  <div id="workspace">
+    <div class="video-panel">
+      <div class="video-stage" id="stage">
+        <video id="video" muted playsinline webkit-playsinline="true"></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div class="transport-row">
+        <button id="playBtn">▶</button>
+        <button id="stepBack">◁</button>
+        <button id="stepFwd">▷</button>
+        <span class="time-readout" id="timeReadout">0.000s</span>
+        <span style="flex:1"></span>
+        <button class="btn ghost" id="reanalyzeBtn" style="width:auto;height:auto;padding:8px 14px;">New video</button>
+      </div>
+      <div class="transport-row">
+        <span class="label" style="margin-right:2px;">View</span>
+        <button class="btn ghost view-btn active" id="viewVideoBtn" data-view="video" style="width:auto;height:auto;padding:8px 14px;">Video</button>
+        <button class="btn ghost view-btn" id="viewSkeletonBtn" data-view="skeleton" style="width:auto;height:auto;padding:8px 14px;">Skeleton</button>
+        <button class="btn ghost" id="batTrackBtn" style="width:auto;height:auto;padding:8px 14px;">Track Bat: Off</button>
+      </div>
+      <div class="scrub-wrap">
+        <div class="scrub-track" id="scrubTrack">
+          <div class="scrub-fill" id="scrubFill"></div>
+          <div class="pin" id="pinLoad" data-label="LOAD" style="--pin-color:#3FA7FF;"><div class="pin-dot"></div></div>
+          <div class="pin" id="pinFP" data-label="PLANT" style="--pin-color:#5C8A6E;"><div class="pin-dot"></div></div>
+          <div class="pin" id="pinContact" data-label="CONTACT" style="--pin-color:#C1602E;"><div class="pin-dot"></div></div>
+          <div class="pin" id="pinExt" data-label="EXT" style="--pin-color:#A23B3B;"><div class="pin-dot"></div></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#3FA7FF"></i>Load</span>
+        <span><i style="background:#5C8A6E"></i>Foot plant</span>
+        <span><i style="background:#C1602E"></i>Contact</span>
+        <span><i style="background:#A23B3B"></i>Extension</span>
+      </div>
+      <div class="legend" id="jointLegend">
+        <span><i style="background:#3FA7FF"></i>Head</span>
+        <span><i style="background:#9B6BD9"></i>Shoulders</span>
+        <span><i style="background:#E08A3C"></i>Elbows</span>
+        <span><i style="background:#E24C4C"></i>Hands</span>
+        <span><i style="background:#4A4A52"></i>Hips</span>
+        <span><i style="background:#E8D24C"></i>Knees</span>
+        <span><i style="background:#4CAF7D"></i>Feet</span>
+      </div>
+      <div class="transport-row" style="border-top:none; padding-top:0;">
+        <span class="label" style="margin-right:2px;">Jump to</span>
+        <button class="btn ghost" data-jump="load" style="width:auto;height:auto;padding:6px 12px;font-size:12px;">Load</button>
+        <button class="btn ghost" data-jump="fp" style="width:auto;height:auto;padding:6px 12px;font-size:12px;">Plant</button>
+        <button class="btn ghost" data-jump="contact" style="width:auto;height:auto;padding:6px 12px;font-size:12px;">Contact</button>
+        <button class="btn ghost" data-jump="ext" style="width:auto;height:auto;padding:6px 12px;font-size:12px;">Ext</button>
+      </div>
+      <div class="hint" id="editHint">Key frames are auto-detected — drag any marker on the timeline to correct it. <strong>Pause the video</strong> and drag any joint dot to fix a mis-tracked point — metrics recalculate automatically. For bat tracking: turn on Track Bat, use "Jump to → Contact" to land exactly on the contact frame, then drag the two gold dots — <strong>Knob</strong> onto the handle end (where the hands grip) and <strong>Tip</strong> onto the far end of the barrel. That's what powers Attack Angle and true Point of Contact.</div>
+    </div>
+  </div>
+
+  <div id="dashboard"></div>
+
+</div>
+
+<div id="baselineTab" style="display:none;">
+
+  <div class="section-head" style="margin-top:8px;"><span class="num">B</span><h2>MLB Baseline</h2><span class="note" id="baselineCount">0 swings logged</span></div>
+  <div class="sub" style="margin:-8px 0 20px; max-width:680px;">Analyze a swing in the Analyze tab, then add it here. Every number below is a running average across everything you've logged — build this out with your 10 MLB clips first, then compare high schoolers against it.</div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+    <button class="btn ghost" id="manualEntryToggle" style="width:auto;height:auto;padding:9px 16px;">Manually Input Baseline Metrics</button>
+    <button class="btn ghost" id="exportBaselineBtn" style="width:auto;height:auto;padding:9px 16px;">Export Backup (Baseline + Clients)</button>
+    <button class="btn ghost" id="importBaselineBtn" style="width:auto;height:auto;padding:9px 16px;">Import Backup</button>
+    <input type="file" id="importBaselineFile" accept=".json,application/json" style="display:none;">
+    <span class="confirm" id="exportBaselineConfirm">Downloaded ✓</span>
+    <span class="confirm" id="importBaselineConfirm">Imported ✓</span>
+  </div>
+
+  <div id="manualEntryForm" class="chart-card" style="display:none; margin-bottom:26px;">
+    <div class="label">Manual Entry</div>
+    <div class="sub" style="margin-bottom:16px;">Got numbers from a Driveline report or somewhere else? Add them straight into the baseline average. Leave anything you don't have blank — it just won't count toward that particular average.</div>
+    <div class="manual-grid">
+      <label>Label<input type="text" id="mLabel" placeholder="e.g. player name"></label>
+      <label>Separation @ Foot Plant (°)<input type="number" step="any" id="mSep"></label>
+      <label>Stride Length (% ht)<input type="number" step="any" id="mStride"></label>
+      <label>Center of Mass Travel (% ht)<input type="number" step="any" id="mCom"></label>
+      <label>Point of Contact (% ht)<input type="number" step="any" id="mPoc"></label>
+      <label>Point of Contact direction
+        <select id="mPocDir"><option value="1">Out front</option><option value="-1">Deep</option></select>
+      </label>
+      <label>Spine Tilt @ Contact (°)<input type="number" step="any" id="mSpine"></label>
+      <label>Front Knee @ Contact (°)<input type="number" step="any" id="mKnee"></label>
+      <label>Head Drift (% ht)<input type="number" step="any" id="mHead"></label>
+      <label>Sequenced correctly?
+        <select id="mSeq"><option value="unknown">Not sure</option><option value="yes">Yes</option><option value="no">No</option></select>
+      </label>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center; margin-top:16px;">
+      <button class="btn" id="manualEntrySubmit">Add to Baseline</button>
+      <button class="btn ghost" id="manualEntryCancel">Cancel</button>
+      <span class="confirm" id="manualEntryConfirm">Added ✓</span>
+    </div>
+  </div>
+
+  <div id="baselineEmpty" class="upload-zone" style="cursor:default;">
+    <h3>No swings logged yet</h3>
+    <p>Analyze a swing, then hit "Add to Baseline" at the top of its results — or add numbers manually above.</p>
+  </div>
+
+  <div id="baselineContent" style="display:none;">
+    <div class="grid" id="baselineAvgGrid"></div>
+
+    <div class="section-head"><span class="num">·</span><h2>Logged Swings</h2><span class="note" id="baselineListNote"></span></div>
+    <div class="chart-card">
+      <div id="baselineList"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="clientsTab" style="display:none;">
+
+  <div class="section-head" style="margin-top:8px;"><span class="num">C</span><h2>Client Swings</h2><span class="note" id="clientsCount">0 swings logged</span></div>
+  <div class="sub" style="margin:-8px 0 20px; max-width:680px;">Every swing here is kept individually per client — nothing gets averaged. Analyze a swing in the Analyze tab, then use "Save to Client Swings" and give it a client's name.</div>
+
+  <div id="clientsEmpty" class="upload-zone" style="cursor:default;">
+    <h3>No client swings saved yet</h3>
+    <p>Analyze a swing, then use "Save to Client Swings" at the top of its results.</p>
+  </div>
+
+  <div id="clientsContent" style="display:none;">
+    <input type="text" id="clientSearchInput" placeholder="Search clients…" class="manual-grid" style="display:block; width:100%; max-width:360px; margin-bottom:22px; background:var(--panel-2); border:1px solid var(--line); color:var(--text); border-radius:7px; padding:10px 12px; font-family:'Inter'; font-size:13px;">
+    <div id="clientsList"></div>
+  </div>
+
+</div>
+
+<div id="drillsTab" style="display:none;">
+
+  <div class="section-head" style="margin-top:8px;"><span class="num">D</span><h2>Drill Recommendations</h2><span class="note" id="drillsSubtitle"></span></div>
+  <div class="sub" style="margin:-8px 0 20px; max-width:680px;">Based on your last analyzed swing vs. your baseline — biggest gaps first. Check off whichever drills you want; nothing is assigned automatically. Sources: Driveline, BPC, and The Hitting Vault (hitting only).</div>
+
+  <div id="drillsEmpty" class="upload-zone" style="cursor:default;">
+    <h3 id="drillsEmptyTitle">Analyze a swing first</h3>
+    <p id="drillsEmptyText">Head to the Analyze tab, run a swing through it, then come back here for recommendations built off that swing vs. your baseline.</p>
+  </div>
+
+  <div id="drillsContent" style="display:none;">
+    <div id="drillsFocusList"></div>
+
+    <div class="section-head"><span class="num">·</span><h2>Also Available</h2><span class="note">on-target metrics — browse if you want</span></div>
+    <div id="drillsOnTarget"></div>
+
+    <div class="section-head" style="margin-top:28px;"><span class="num">✓</span><h2>My Routine</h2><span class="note" id="routineCount">none selected yet</span></div>
+    <div class="chart-card">
+      <div id="routineBox"><div class="sub">Check off any drills above and they'll collect here as your routine.</div></div>
+      <div style="display:flex; gap:10px; align-items:center; margin-top:16px;">
+        <button class="btn ghost" id="copyRoutineBtn" style="width:auto;height:auto;padding:9px 16px;">Copy Routine as Text</button>
+        <button class="btn ghost" id="clearRoutineBtn" style="width:auto;height:auto;padding:9px 16px;">Clear</button>
+        <span class="confirm" id="copyRoutineConfirm">Copied ✓</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</main>
+
+<footer id="footerNote" style="display:none;">
+  All measurements are estimated from 2D video and normalized to the player's on-screen body length, since true scale and depth aren't recoverable from a single camera. Treat these as comparative numbers for swings filmed at a consistent angle and distance — not lab-grade biomechanics data.
+</footer>
+
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+// ---------- DOM ----------
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const sideSeg = document.getElementById('sideSeg');
+const progressWrap = document.getElementById('progressWrap');
+const progressLabel = document.getElementById('progressLabel');
+const progressFill = document.getElementById('progressFill');
+const retryBtn = document.getElementById('retryBtn');
+const uploadStage = document.getElementById('uploadStage');
+const workspace = document.getElementById('workspace');
+const dashboard = document.getElementById('dashboard');
+const footerNote = document.getElementById('footerNote');
+
+const video = document.getElementById('video');
+const overlay = document.getElementById('overlay');
+const ctx = overlay.getContext('2d');
+const detectCanvas = document.createElement('canvas');
+const detectCtx = detectCanvas.getContext('2d', {willReadFrequently:true});
+const playBtn = document.getElementById('playBtn');
+const stepBack = document.getElementById('stepBack');
+const stepFwd = document.getElementById('stepFwd');
+const timeReadout = document.getElementById('timeReadout');
+const scrubTrack = document.getElementById('scrubTrack');
+const scrubFill = document.getElementById('scrubFill');
+const reanalyzeBtn = document.getElementById('reanalyzeBtn');
+
+const pins = {
+  load: document.getElementById('pinLoad'),
+  fp: document.getElementById('pinFP'),
+  contact: document.getElementById('pinContact'),
+  ext: document.getElementById('pinExt'),
+};
+
+let frontSide = 'left';
+
+window.addEventListener('error', e=>{
+  console.error('Swing Lab error:', e.error || e.message);
+  if(progressWrap.style.display !== 'none' && uploadStage.style.display !== 'none'){
+    setStatus('Something went wrong. Please try again, or try a different video.', 0, {error:true});
+  }
+});
+window.addEventListener('unhandledrejection', e=>{
+  console.error('Swing Lab unhandled rejection:', e.reason);
+  if(progressWrap.style.display !== 'none' && uploadStage.style.display !== 'none'){
+    setStatus('Something went wrong. Please try again, or try a different video.', 0, {error:true});
+  }
+});
+
+sideSeg.querySelectorAll('button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    sideSeg.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    frontSide = b.dataset.side;
+  });
+});
+
+// ---------- state ----------
+let frames = [];          // [{t, lm:[{x,y}]}]  (lm in pixel space, video.videoWidth/Height)
+let videoW=0, videoH=0;
+let keyIdx = { load:0, fp:0, contact:0, ext:0 }; // indices into frames[]
+let landmarker = null;
+let frontIdx = {ankle:27, knee:25, hip:23, elbow:13, wrist:15, heel:29, foot:31};
+let backIdx  = {ankle:28, knee:26, hip:24, elbow:14, wrist:16, heel:30, foot:32};
+
+const CONNECTIONS = [
+  [11,12],[11,13],[13,15],[12,14],[14,16],
+  [11,23],[12,24],[23,24],
+  [23,25],[25,27],[24,26],[26,28],
+  [27,29],[27,31],[29,31],
+  [28,30],[28,32],[30,32],
+  [0,11],[0,12]
+];
+
+// ---------- upload handling ----------
+['dragover','dragleave','drop'].forEach(evt=>{
+  dropZone.addEventListener(evt, e=>{
+    e.preventDefault();
+    if(evt==='dragover') dropZone.classList.add('drag');
+    if(evt==='dragleave') dropZone.classList.remove('drag');
+    if(evt==='drop'){
+      dropZone.classList.remove('drag');
+      const f = e.dataTransfer.files[0];
+      if(f) handleFile(f);
+    }
+  });
+});
+dropZone.addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', e=>{
+  if(e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+function setStatus(text, pct, opts={}){
+  progressWrap.style.display = 'block';
+  progressLabel.textContent = text;
+  progressLabel.classList.toggle('error', !!opts.error);
+  progressLabel.classList.toggle('spin', !opts.error && opts.spin !== false);
+  progressFill.classList.toggle('error', !!opts.error);
+  if(!opts.error) progressFill.style.width = `${pct}%`;
+  retryBtn.style.display = opts.error ? 'inline-block' : 'none';
+}
+
+function withTimeout(promise, ms, message){
+  return Promise.race([
+    promise,
+    new Promise((_, reject)=> setTimeout(()=>reject(new Error(message)), ms))
+  ]);
+}
+
+retryBtn.addEventListener('click', ()=>{
+  progressWrap.style.display = 'none';
+  fileInput.value = '';
+});
+
+async function handleFile(file){
+  // immediate feedback the instant a file is picked, before any async work
+  setStatus(`Reading "${file.name}"…`, 5);
+
+  if(!file.type.startsWith('video/') && !/\.(mp4|mov|m4v|qt)$/i.test(file.name)){
+    setStatus(`"${file.name}" doesn't look like a video file. Try an mp4 or mov.`, 0, {error:true});
+    return;
+  }
+
+  try{
+    const url = URL.createObjectURL(file);
+    video.src = url;
+
+    setStatus('Loading video…', 10);
+    await withTimeout(new Promise((res, rej)=>{
+      video.onloadedmetadata = res;
+      video.onerror = ()=> rej(new Error('format'));
+    }), 15000, 'timeout');
+
+    videoW = video.videoWidth; videoH = video.videoHeight;
+    if(!videoW || !videoH) throw new Error('format');
+
+    setStatus('Loading high-precision pose model… (first time only, needs internet)', 18);
+
+    if(!landmarker){
+      const vision = await withTimeout(
+        FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"),
+        30000, 'model-load-timeout'
+      );
+      try{
+        landmarker = await withTimeout(PoseLandmarker.createFromOptions(vision, {
+          baseOptions:{
+            modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task",
+            delegate:"GPU"
+          },
+          runningMode:"VIDEO",
+          numPoses:1,
+          minPoseDetectionConfidence:0.5,
+          minPosePresenceConfidence:0.5,
+          minTrackingConfidence:0.5
+        }), 30000, 'model-load-timeout');
+      }catch(e){
+        setStatus('Retrying with a more compatible mode…', 18);
+        landmarker = await withTimeout(PoseLandmarker.createFromOptions(vision, {
+          baseOptions:{
+            modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task",
+            delegate:"CPU"
+          },
+          runningMode:"VIDEO",
+          numPoses:1,
+          minPoseDetectionConfidence:0.5,
+          minPosePresenceConfidence:0.5,
+          minTrackingConfidence:0.5
+        }), 35000, 'model-load-timeout');
+      }
+    }
+
+    await analyzeVideo();
+
+  }catch(err){
+    console.error('Swing Lab upload error:', err);
+    let msg = 'Something went wrong analyzing that video. Please try again.';
+    if(err.message === 'format'){
+      msg = `Couldn't play "${file.name}" in this browser. Try a standard .mp4, or if it's an iPhone .mov, open this page in Safari on the iPhone itself.`;
+    } else if(err.message === 'model-load-timeout'){
+      msg = 'The pose-tracking model is taking too long to load — check your internet connection and try again.';
+    } else if(err.message === 'timeout'){
+      msg = 'The video took too long to load — try a smaller clip or a standard .mp4.';
+    }
+    setStatus(msg, 0, {error:true});
+  }
+}
+
+async function analyzeVideo(){
+  frames = [];
+  const duration = video.duration;
+  const SAMPLE_COUNT = Math.min(220, Math.max(50, Math.round(duration*55)));
+  const step = duration / SAMPLE_COUNT;
+
+  // detect on a higher-fidelity copy of each frame — more pixels in means a
+  // sharper crop for the model to work with, especially on smaller/faster
+  // joints like wrists and ankles
+  const detectW = Math.min(900, videoW);
+  const detectH = Math.round(detectW * (videoH/videoW));
+  detectCanvas.width = detectW;
+  detectCanvas.height = detectH;
+
+  for(let i=0;i<SAMPLE_COUNT;i++){
+    const t = Math.min(duration - 0.001, i*step);
+    await withTimeout(seekTo(t), 4000, 'seek-timeout').catch(()=>{});
+    try{
+      detectCtx.drawImage(video, 0, 0, detectW, detectH);
+      const result = landmarker.detectForVideo(detectCanvas, performance.now());
+      if(result.landmarks && result.landmarks.length){
+        const lm = result.landmarks[0].map(p=>({x:p.x*videoW, y:p.y*videoH, v:p.visibility ?? 1}));
+        frames.push({t: video.currentTime, lm});
+      }
+    }catch(e){
+      console.warn('Frame tracking skipped a frame:', e);
+    }
+    setStatus(`Tracking frame ${i+1} / ${SAMPLE_COUNT}…`, 18 + (i/SAMPLE_COUNT)*74);
+  }
+
+  if(frames.length < 10){
+    setStatus('Couldn\'t find a clear, full-body pose in this clip. Try a clip with the whole body visible, good lighting, and the camera fairly steady.', 0, {error:true});
+    return;
+  }
+
+  setStatus('Stabilizing tracking…', 93);
+  smoothLandmarks(frames);
+
+  setStatus('Finalizing…', 98);
+  setupFrontBack();
+  autoDetectKeyframes();
+  setTimeout(()=>{
+    progressWrap.style.display='none';
+    uploadStage.style.display='none';
+    workspace.style.display='block';
+    footerNote.style.display='block';
+    initPlayback();
+    layoutPins();
+    computeAndRender();
+  }, 250);
+}
+
+function seekTo(t){
+  return new Promise(res=>{
+    const onSeeked = ()=>{ video.removeEventListener('seeked', onSeeked); res(); };
+    video.addEventListener('seeked', onSeeked);
+    video.currentTime = t;
+  });
+}
+
+function setupFrontBack(){
+  const lm = frames[0].lm;
+  const leftIsFrontScreen = lm[27].x < lm[28].x; // is anatomical-left ankle the leftmost on screen?
+  const userWantsLeftScreen = frontSide === 'left';
+  const anatomicalLeftIsFront = leftIsFrontScreen === userWantsLeftScreen;
+  if(anatomicalLeftIsFront){
+    frontIdx = {ankle:27, knee:25, hip:23, elbow:13, wrist:15, heel:29, foot:31};
+    backIdx  = {ankle:28, knee:26, hip:24, elbow:14, wrist:16, heel:30, foot:32};
+  } else {
+    frontIdx = {ankle:28, knee:26, hip:24, elbow:14, wrist:16, heel:30, foot:32};
+    backIdx  = {ankle:27, knee:25, hip:23, elbow:13, wrist:15, heel:29, foot:31};
+  }
+}
+
+// ---------- math helpers ----------
+const dist = (a,b)=>Math.hypot(a.x-b.x, a.y-b.y);
+const mid = (a,b)=>({x:(a.x+b.x)/2, y:(a.y+b.y)/2});
+function angleAt(b,a,c){
+  const v1={x:a.x-b.x,y:a.y-b.y}, v2={x:c.x-b.x,y:c.y-b.y};
+  const dot=v1.x*v2.x+v1.y*v2.y;
+  const m1=Math.hypot(v1.x,v1.y), m2=Math.hypot(v2.x,v2.y);
+  if(m1===0||m2===0) return 0;
+  let cos = dot/(m1*m2);
+  cos = Math.max(-1,Math.min(1,cos));
+  return Math.acos(cos)*180/Math.PI;
+}
+function lineAngleDeg(a,b){
+  return Math.atan2(b.y-a.y, b.x-a.x)*180/Math.PI;
+}
+function smooth(arr, win=5){
+  const out=[];
+  const h=Math.floor(win/2);
+  for(let i=0;i<arr.length;i++){
+    let s=0,n=0;
+    for(let j=Math.max(0,i-h); j<=Math.min(arr.length-1,i+h); j++){ s+=arr[j]; n++; }
+    out.push(s/n);
+  }
+  return out;
+}
+function median(arr){
+  const s = [...arr].sort((a,b)=>a-b);
+  const m = Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function medianFilter(arr, win=5){
+  const out=[];
+  const h=Math.floor(win/2);
+  for(let i=0;i<arr.length;i++){
+    const seg=[];
+    for(let j=Math.max(0,i-h); j<=Math.min(arr.length-1,i+h); j++) seg.push(arr[j]);
+    out.push(median(seg));
+  }
+  return out;
+}
+
+// ---------- tracking rework: confidence-weighted filtering ----------
+// Previously this was three separate stages (hold-still on occlusion, median
+// spike filter, then a fixed adaptive smoother) run one after another. Each
+// stage made its own local decision without knowing about the others, which
+// is exactly the kind of setup where fixes in one stage create side effects
+// in the next. This replaces all three with one filter that does the same
+// job in a single, continuous pass: how much it trusts each frame's raw
+// position is scaled directly by how confident the model itself was about
+// that point (its visibility score) — full confidence behaves like normal
+// adaptive smoothing, and confidence fading toward zero fades the point
+// toward genuinely holding still, with no gap in between where behavior
+// suddenly flips from one rule to another.
+function oneEuroAlpha(cutoff, dt){
+  const tau = 1/(2*Math.PI*cutoff);
+  return 1/(1+tau/dt);
+}
+// Smooth ramp from "don't trust this frame at all" to "fully trust it" —
+// no hard cutoff, so there's no single threshold to get wrong or oscillate
+// around from one video to the next.
+function visibilityTrust(v, lo=0.2, hi=0.6){
+  if(v <= lo) return 0;
+  if(v >= hi) return 1;
+  return (v-lo)/(hi-lo);
+}
+function confidenceFilterPass(values, times, visArr, forward, minCutoff, beta, dCutoff){
+  const n = values.length;
+  const order = forward ? [...Array(n).keys()] : [...Array(n).keys()].reverse();
+  const out = new Array(n);
+  let xPrev = values[order[0]], dxPrev = 0, tPrev = times[order[0]];
+  out[order[0]] = xPrev;
+  order.forEach((idx,k)=>{
+    if(k===0) return;
+    const dt = Math.max(1/240, Math.abs(times[idx]-tPrev));
+    const trust = visibilityTrust(visArr[idx]);
+
+    // Motion prediction: where SHOULD this joint be, based on where it was
+    // and how fast it was moving? A constant-velocity step from the last
+    // filtered position. When the model is confident we barely lean on this;
+    // when it's not, this prediction is what we fall back toward instead of
+    // freezing in place — so a joint that was mid-swing keeps its trajectory
+    // through a bad patch rather than stalling and then snapping to catch up.
+    const predicted = xPrev + dxPrev * dt * (forward ? 1 : -1);
+
+    const dx = (values[idx]-xPrev)/dt;
+    const aD = oneEuroAlpha(dCutoff, dt);
+    const dxHat = aD*dx + (1-aD)*dxPrev;
+    const cutoff = minCutoff + beta*Math.abs(dxHat);
+    const aBase = oneEuroAlpha(cutoff, dt);
+
+    // Blend three things by confidence:
+    //   trust high  -> mostly the raw detection (normal adaptive smoothing)
+    //   trust low   -> mostly the motion prediction (keep gliding)
+    // The raw sample's weight is scaled by trust; the remaining weight splits
+    // between prediction (more as trust drops) and the last position.
+    const a = aBase * trust;
+    const predWeight = (1 - trust) * 0.85; // how hard to lean on prediction when unsure
+    const holdWeight = 1 - a - predWeight;
+    const xHat = a*values[idx] + predWeight*predicted + holdWeight*xPrev;
+
+    out[idx] = xHat;
+    // Through a low-confidence stretch, keep the last CONFIDENT velocity mostly
+    // intact so the joint continues gliding at its real speed instead of
+    // decaying to a stall. Only update velocity from the data when we trust it.
+    if(trust > 0.05){
+      dxPrev = dxHat;
+    } // else: hold prior velocity (constant-velocity glide through the gap)
+    xPrev = xHat;
+    tPrev = times[idx];
+  });
+  return out;
+}
+// Run forward, then backward, then average — cancels the lag either single
+// pass would introduce, which matters because a delayed signal would also
+// delay/skew keyframe detection downstream.
+function confidenceFilterZeroPhase(values, times, visArr, minCutoff=1.0, beta=0.012, dCutoff=1.0){
+  const fwd = confidenceFilterPass(values, times, visArr, true, minCutoff, beta, dCutoff);
+  const bwd = confidenceFilterPass(values, times, visArr, false, minCutoff, beta, dCutoff);
+  return values.map((_,i)=>(fwd[i]+bwd[i])/2);
+}
+function smoothLandmarks(frameList){
+  if(frameList.length < 5) return;
+  const times = frameList.map(f=>f.t);
+  const numPts = frameList[0].lm.length;
+
+  // Body scale for this clip: shoulder-to-hip span, median across frames.
+  // Used to judge whether a joint's frame-to-frame jump is physically
+  // plausible. A real joint can't teleport a full body-length between two
+  // adjacent frames — if a detection does, it's wrong no matter how
+  // confident the model claims to be (this is the "dot flies off screen"
+  // case, which the model often reports with HIGH confidence, so the
+  // visibility score alone never catches it).
+  const spanSamples = [];
+  for(const f of frameList){
+    const sh = f.lm[11], hip = f.lm[23];
+    if(sh && hip) spanSamples.push(Math.hypot(sh.x-hip.x, sh.y-hip.y));
+  }
+  spanSamples.sort((a,b)=>a-b);
+  const bodySpan = spanSamples.length ? spanSamples[Math.floor(spanSamples.length/2)] : 0.15;
+  const maxJump = Math.max(bodySpan * 1.1, 1e-6); // per-frame ceiling on plausible motion
+
+  // ---- Bat-grip reconstruction for the occluded back arm ----
+  //
+  // The hard case (correctly diagnosed): in a 2D view the BACK arm hides
+  // behind the torso/front arm for a run of frames during the load. Tethering
+  // stopped the dots flying off-screen but couldn't stop them swinging around
+  // on that tether, because length constraints don't fix a flailing angle.
+  //
+  // The key physical fact: the hitter is gripping a bat, so the two hands are
+  // locked a near-constant short distance apart the whole time they hold it.
+  // The FRONT hand sits on the camera side and almost never gets occluded, so
+  // it's a reliable anchor. So during a back-arm occlusion we don't guess and
+  // we don't just interpolate a straight line (which cuts corners when the
+  // hands are actually moving through the load) — we PIN the back hand right
+  // next to the front hand every frame, then solve the back elbow as the
+  // natural bend of a two-bone chain between that reconstructed wrist and the
+  // reliable back shoulder. The whole back arm is reconstructed from two
+  // trustworthy anchors instead of a flailing guess.
+  //
+  // frontSide is the front FOOT side; the hand nearest the camera / least
+  // occluded tracks with it, so front-side wrist = reliable anchor hand.
+  const fWrist = frontSide === 'left' ? 15 : 16;
+  const bWrist = frontSide === 'left' ? 16 : 15;
+  const bElbow = frontSide === 'left' ? 14 : 13;
+  const bShoulder = frontSide === 'left' ? 12 : 11;
+
+  // Measure the athlete's own grip offset (front hand -> back hand) and back
+  // forearm / upper-arm lengths, robustly (median), from the frames where the
+  // back arm IS visible.
+  const gripDX=[], gripDY=[], foreLens=[], upperLens=[];
+  for(const f of frameList){
+    const fw=f.lm[fWrist], bw=f.lm[bWrist], be=f.lm[bElbow], bs=f.lm[bShoulder];
+    const bwVis = typeof bw.v==='number' ? bw.v : 1;
+    const beVis = typeof be.v==='number' ? be.v : 1;
+    if(fw && bw && bwVis>0.5){ gripDX.push(bw.x-fw.x); gripDY.push(bw.y-fw.y); }
+    if(bw && be && bwVis>0.5 && beVis>0.5) foreLens.push(Math.hypot(bw.x-be.x, bw.y-be.y));
+    if(be && bs && beVis>0.5) upperLens.push(Math.hypot(be.x-bs.x, be.y-bs.y));
+  }
+  const median = a => { if(!a.length) return null; const s=[...a].sort((x,y)=>x-y); return s[Math.floor(s.length/2)]; };
+  const gDX=median(gripDX), gDY=median(gripDY);
+  const foreLen=median(foreLens), upperLen=median(upperLens);
+
+  // Detect back-arm occlusion runs the same way as before (low confidence OR
+  // a jitter signature, since the model sometimes reports high confidence
+  // while wrong), then reconstruct across each run.
+  if(gDX!==null && foreLen!==null && upperLen!==null){
+    const n = frameList.length;
+    const wristVis = i=>{ const v=frameList[i].lm[bWrist].v; return typeof v==='number'?v:1; };
+    const occluded = new Array(n).fill(false);
+    for(let i=0;i<n;i++){
+      if(wristVis(i) < 0.5){ occluded[i]=true; continue; }
+      const a=i-2>=0?i-2:null, b=i+2<n?i+2:null;
+      if(a!==null && b!==null){
+        const mx=(frameList[a].lm[bWrist].x+frameList[b].lm[bWrist].x)/2;
+        const my=(frameList[a].lm[bWrist].y+frameList[b].lm[bWrist].y)/2;
+        const dev=Math.hypot(frameList[i].lm[bWrist].x-mx, frameList[i].lm[bWrist].y-my);
+        const span=Math.hypot(frameList[b].lm[bWrist].x-frameList[a].lm[bWrist].x,
+                              frameList[b].lm[bWrist].y-frameList[a].lm[bWrist].y);
+        if(dev > maxJump*0.7 && dev > span*0.9) occluded[i]=true;
+      }
+    }
+    for(let i=1;i<n-1;i++){ if(!occluded[i] && occluded[i-1] && occluded[i+1]) occluded[i]=true; }
+
+    for(let i=0;i<n;i++){
+      if(!occluded[i]) continue;
+      const f = frameList[i];
+      const fw = f.lm[fWrist];
+      if(!fw) continue;
+
+      // 1) back hand pinned next to the front hand via the grip offset
+      const wx = fw.x + gDX, wy = fw.y + gDY;
+      f.lm[bWrist] = {x:wx, y:wy, v:f.lm[bWrist].v};
+
+      // 2) back elbow = the natural bend of a two-bone chain between the now-
+      //    known back wrist and the reliable back shoulder. Solve the circle-
+      //    circle intersection (shoulder radius = upperLen, wrist radius =
+      //    foreLen); pick the elbow position closest to the model's own last
+      //    plausible guess so the bend points the anatomically correct way.
+      const bs = f.lm[bShoulder];
+      if(bs){
+        const ex = wx - bs.x, ey = wy - bs.y;
+        const D = Math.hypot(ex, ey) || 1e-6;
+        // clamp reach so the chain can always close
+        const reach = Math.min(D, upperLen + foreLen - 1e-4);
+        const aLen = (upperLen*upperLen - foreLen*foreLen + reach*reach) / (2*reach);
+        const h2 = Math.max(0, upperLen*upperLen - aLen*aLen);
+        const h = Math.sqrt(h2);
+        const ux = ex/D, uy = ey/D;            // shoulder -> wrist unit
+        const px = bs.x + ux*aLen, py = bs.y + uy*aLen; // foot of the elbow
+        // two candidate elbow positions, perpendicular to the chain
+        const c1x = px + (-uy)*h, c1y = py + (ux)*h;
+        const c2x = px - (-uy)*h, c2y = py - (ux)*h;
+        const guess = f.lm[bElbow] || {x:px, y:py};
+        const d1 = Math.hypot(c1x-guess.x, c1y-guess.y);
+        const d2 = Math.hypot(c2x-guess.x, c2y-guess.y);
+        const [gx, gy] = d1<=d2 ? [c1x,c1y] : [c2x,c2y];
+        f.lm[bElbow] = {x:gx, y:gy, v:f.lm[bElbow].v};
+      }
+    }
+  }
+
+  for(let idx=0; idx<numPts; idx++){
+    // light median pre-pass: catches a single wild single-frame spike before
+    // it can throw off the confidence filter's own velocity estimate.
+    const xs = medianFilter(frameList.map(f=>f.lm[idx].x), 3);
+    const ys = medianFilter(frameList.map(f=>f.lm[idx].y), 3);
+    const vis = frameList.map(f=>{
+      const v = f.lm[idx].v;
+      return (typeof v === 'number') ? v : 1;
+    });
+
+    // Physical-plausibility guard for the "dot flies off screen" artifact.
+    // A bad detection juts out from the straight line between its two
+    // neighbors while the neighbors themselves stay put (the joint didn't
+    // really go anywhere). Genuinely fast motion is different: the point sits
+    // right on the chord between its neighbors, because the neighbors moved
+    // with it. So flag a frame only when it deviates from that neighbor-chord
+    // by more than a plausible per-frame distance AND that deviation is large
+    // relative to how far the neighbors actually traveled. This catches the
+    // high-confidence-but-wrong case the model's own score never flags, and —
+    // unlike a bone-length/geometry check — it does not fire on legitimate
+    // smooth fast motion through the swing. The confidence filter then glides
+    // or holds through the flagged frame instead of chasing it off-screen.
+    for(let i=1;i<frameList.length-1;i++){
+      const midx = (xs[i-1]+xs[i+1])/2, midy = (ys[i-1]+ys[i+1])/2;
+      const devFromChord = Math.hypot(xs[i]-midx, ys[i]-midy);
+      const neighborSpan = Math.hypot(xs[i+1]-xs[i-1], ys[i+1]-ys[i-1]);
+      if(devFromChord > maxJump && devFromChord > neighborSpan*0.75){
+        vis[i] = 0;
+      }
+    }
+
+    const sx = confidenceFilterZeroPhase(xs, times, vis);
+    const sy = confidenceFilterZeroPhase(ys, times, vis);
+    for(let i=0;i<frameList.length;i++){
+      frameList[i].lm[idx] = {x:sx[i], y:sy[i], v:vis[i]};
+    }
+  }
+
+  // Arm-chain tether pass — runs AFTER the per-joint smoothing above.
+  //
+  // The chord guard above catches an isolated fly-off, but the hands have a
+  // harder failure mode: when the bat crosses them or they blur at the
+  // fastest part of the swing, they can be lost for SEVERAL frames in a row
+  // while also genuinely moving fast. That defeats the chord check (the
+  // "good" neighbors bracketing the gap are far apart, so a big deviation
+  // looks like legitimate motion) and the dot shoots off screen.
+  //
+  // But every joint on the arm is physically tethered to the one before it:
+  // an elbow can't be farther from its shoulder than the upper arm is long,
+  // and a wrist can't be farther from its elbow than the forearm is long.
+  // Shoulders are among the most reliable landmarks, so we anchor OUTWARD
+  // from them — fix elbow-vs-shoulder first, then wrist-vs-(corrected)elbow —
+  // so a blurred elbow can't corrupt the wrist correction. This is a hard
+  // anatomical limit, not a motion guess: it holds no matter how fast the
+  // hand moves or how many frames it was lost.
+  const armChain = [
+    [11,13], [13,15], // left:  shoulder→elbow, elbow→wrist
+    [12,14], [14,16], // right: shoulder→elbow, elbow→wrist
+  ];
+  armChain.forEach(([anchor, joint])=>{
+    const lens = [];
+    for(const f of frameList){
+      const a = f.lm[anchor], j = f.lm[joint];
+      if(a && j) lens.push(Math.hypot(a.x-j.x, a.y-j.y));
+    }
+    if(lens.length < 5) return;
+    lens.sort((x,y)=>x-y);
+    // Median, not an upper percentile: the fly-off frames we're trying to
+    // catch are themselves long outliers, so an upper percentile would let
+    // them inflate the "true" length estimate and defeat the whole check.
+    // The median is robust to those bad frames.
+    const trueLen = lens[Math.floor(lens.length*0.5)];
+    const maxLen = trueLen * 1.35; // allowance for foreshortening + detection noise
+    for(const f of frameList){
+      const a = f.lm[anchor], j = f.lm[joint];
+      if(!a || !j) continue;
+      const dx = j.x - a.x, dy = j.y - a.y;
+      const d = Math.hypot(dx, dy);
+      if(d > maxLen && d > 1e-6){
+        // pull the joint back in along the anchor→joint direction to a
+        // plausible segment length (keeps its angle, fixes only the reach)
+        const k = maxLen / d;
+        f.lm[joint] = {x: a.x + dx*k, y: a.y + dy*k, v: f.lm[joint].v};
+      }
+    }
+  });
+}
+function unwrap(degArr){
+  const out=[degArr[0]];
+  for(let i=1;i<degArr.length;i++){
+    let d = degArr[i]-degArr[i-1];
+    while(d>180){ d-=360; }
+    while(d<-180){ d+=360; }
+    out.push(out[i-1]+d);
+  }
+  return out;
+}
+function derivative(values, times){
+  const out=[0];
+  for(let i=1;i<values.length;i++){
+    const dt = times[i]-times[i-1];
+    out.push(dt>0 ? (values[i]-values[i-1])/dt : 0);
+  }
+  return out;
+}
+
+// ---------- auto keyframe detection ----------
+function autoDetectKeyframes(){
+  const n = frames.length;
+  const times = frames.map(f=>f.t);
+  const frontAnkleX = smooth(frames.map(f=>f.lm[frontIdx.ankle].x));
+  const ankleVel = derivative(frontAnkleX, times).map(Math.abs);
+  const smoothVel = smooth(ankleVel, 5);
+
+  // overall body speed (avg wrist speed) for contact detection
+  const wristSpeed = frames.map((f,i)=>{
+    if(i===0) return 0;
+    const prev = frames[i-1];
+    const dt = f.t - prev.t || 1/60;
+    const lw = dist(f.lm[15], prev.lm[15])/dt;
+    const rw = dist(f.lm[16], prev.lm[16])/dt;
+    return Math.max(lw,rw);
+  });
+  const smoothWrist = smooth(wristSpeed, 5);
+
+  // load: quietest moment (lowest combined motion) in first 55% of clip
+  let loadI = 0, minMotion = Infinity;
+  for(let i=2;i<Math.floor(n*0.55);i++){
+    const m = smoothVel[i] + smoothWrist[i]*0.15;
+    if(m < minMotion){ minMotion = m; loadI = i; }
+  }
+
+  // stride start: first index after load where ankle velocity exceeds threshold
+  const peakAnkleVel = Math.max(...smoothVel.slice(loadI));
+  const strideThresh = peakAnkleVel * 0.25;
+  let strideStartI = loadI;
+  for(let i=loadI;i<n;i++){
+    if(smoothVel[i] > strideThresh){ strideStartI = i; break; }
+  }
+
+  // foot plant: first local minimum of ankle velocity after stride start
+  let fpI = Math.min(strideStartI+3, n-2);
+  for(let i=strideStartI+2;i<n-1;i++){
+    if(smoothVel[i] < smoothVel[i-1] && smoothVel[i] <= smoothVel[i+1]){
+      fpI = i; break;
+    }
+  }
+
+  // contact: raw peak wrist speed alone is unreliable — in a lot of good swings,
+  // the hands actually decelerate slightly before contact while the bat keeps
+  // accelerating ("lag and release"), so the single fastest wrist-speed frame
+  // can land mid-rotation instead of at the ball. Combine three signals instead
+  // of trusting any one of them alone: hand speed, hip-shoulder separation
+  // collapsing back toward square, and the lead hand reaching forward — contact
+  // should score high on all three at once, not just one.
+  const hipAngRaw2 = frames.map(f=>lineAngleDeg(f.lm[23], f.lm[24]));
+  const shAngRaw2  = frames.map(f=>lineAngleDeg(f.lm[11], f.lm[12]));
+  const hipAngU = unwrap(hipAngRaw2);
+  const shAngU  = unwrap(shAngRaw2);
+  const hipRot2 = hipAngU.map(a=>a-hipAngU[loadI]);
+  const shRot2  = shAngU.map(a=>a-shAngU[loadI]);
+  const sepSeries = shRot2.map((s,i)=>Math.abs(s-hipRot2[i]));
+
+  const comSeries = frames.map(f=>mid(f.lm[23], f.lm[24]));
+  const forwardSign2 = Math.sign(frames[loadI].lm[frontIdx.ankle].x - frames[loadI].lm[backIdx.ankle].x) || 1;
+  const wristForward = frames.map((f,i)=>(f.lm[frontIdx.wrist].x - comSeries[i].x) * forwardSign2);
+
+  // First, locate the general vicinity of the swing using the raw wrist-speed
+  // peak — reliable for "roughly where the fast motion is," even though it's
+  // not precise enough on its own for the exact contact frame. Then search
+  // for contact only in a tight window around that peak, NOT all the way to
+  // the end of the clip. Searching the full tail lets unrelated motion later
+  // in the video (follow-through, dropping the bat, walking off) dominate the
+  // normalization and drag the pick earlier than it should be.
+  let roughPeakI = fpI, roughPeakV = -1;
+  for(let i=fpI;i<n;i++){
+    if(smoothWrist[i] > roughPeakV){ roughPeakV = smoothWrist[i]; roughPeakI = i; }
+  }
+  const halfWin = Math.max(4, Math.round(n*0.09));
+  const plantBuffer = Math.max(1, Math.round((n-fpI)*0.1));
+  const contactSearchStart = Math.max(fpI + plantBuffer, roughPeakI - halfWin);
+  const contactSearchEnd = Math.min(n, roughPeakI + halfWin + 1);
+
+  const maxSep = Math.max(1, ...sepSeries.slice(contactSearchStart, contactSearchEnd));
+  const wristSlice = smoothWrist.slice(contactSearchStart, contactSearchEnd);
+  const maxWristInWindow = Math.max(1, ...wristSlice);
+  const fwdSlice = wristForward.slice(contactSearchStart, contactSearchEnd);
+  const fwdMin = Math.min(...fwdSlice), fwdMax = Math.max(...fwdSlice);
+  const fwdRange = Math.max(1, fwdMax - fwdMin);
+
+  let contactI = contactSearchStart;
+  let bestScore = -1;
+  for(let i=contactSearchStart;i<contactSearchEnd;i++){
+    const speedNorm = smoothWrist[i] / maxWristInWindow;      // 1 = fastest hand speed in window
+    const sepNorm = sepSeries[i] / maxSep;                     // 0 = squared up, 1 = still wide open
+    const fwdNorm = (wristForward[i]-fwdMin) / fwdRange;       // 1 = hand reaching its farthest forward
+    // speed is weighted more heavily (and sharpened via the exponent) since
+    // it's the most direct signal — forward reach keeps climbing well into
+    // follow-through even after contact has already happened, so giving it
+    // too much say tends to pull the pick later than it should be
+    const score = Math.pow(speedNorm, 1.4) * (0.5 + 0.5*(1-sepNorm)) * (0.65 + 0.35*fwdNorm);
+    if(score > bestScore){ bestScore = score; contactI = i; }
+  }
+
+  // extension: local max of front elbow angle after contact (shoulder-elbow-wrist)
+  let extI = Math.min(contactI + Math.round(n*0.06), n-1);
+  let maxElbow = -1;
+  const searchEnd = Math.min(n, contactI + Math.round(n*0.18));
+  for(let i=contactI;i<searchEnd;i++){
+    const f = frames[i];
+    const shoulderIdx = frontIdx.elbow===13?11:12;
+    const ang = angleAt(f.lm[frontIdx.elbow], f.lm[shoulderIdx], f.lm[frontIdx.wrist]);
+    if(ang>maxElbow){ maxElbow=ang; extI=i; }
+  }
+
+  keyIdx = { load:loadI, fp:Math.max(fpI,loadI+1), contact:Math.max(contactI,fpI+1), ext:Math.max(extI,contactI) };
+}
+
+// ---------- pins / scrubbing ----------
+function layoutPins(){
+  const duration = video.duration;
+  Object.entries({load:pins.load, fp:pins.fp, contact:pins.contact, ext:pins.ext}).forEach(([k,el])=>{
+    const t = frames[keyIdx[k]].t;
+    el.style.left = `${(t/duration)*100}%`;
+  });
+  makeDraggable(pins.load, 'load');
+  makeDraggable(pins.fp, 'fp');
+  makeDraggable(pins.contact, 'contact');
+  makeDraggable(pins.ext, 'ext');
+}
+
+function nearestFrameIndex(t){
+  let best=0, bestD=Infinity;
+  for(let i=0;i<frames.length;i++){
+    const d = Math.abs(frames[i].t - t);
+    if(d<bestD){ bestD=d; best=i; }
+  }
+  return best;
+}
+
+function makeDraggable(el, key){
+  let dragging=false;
+  el.addEventListener('mousedown', e=>{ dragging=true; e.stopPropagation(); });
+  el.addEventListener('touchstart', e=>{ dragging=true; e.stopPropagation(); }, {passive:true});
+  window.addEventListener('mousemove', e=>{ if(dragging) updateFromClientX(e.clientX, key); });
+  window.addEventListener('touchmove', e=>{ if(dragging) updateFromClientX(e.touches[0].clientX, key); }, {passive:true});
+  window.addEventListener('mouseup', ()=>{ if(dragging){ dragging=false; computeAndRender(); }});
+  window.addEventListener('touchend', ()=>{ if(dragging){ dragging=false; computeAndRender(); }});
+}
+function updateFromClientX(clientX, key){
+  const rect = scrubTrack.getBoundingClientRect();
+  let frac = (clientX-rect.left)/rect.width;
+  frac = Math.max(0,Math.min(1,frac));
+  const t = frac*video.duration;
+  keyIdx[key] = nearestFrameIndex(t);
+  pins[key].style.left = `${frac*100}%`;
+}
+
+scrubTrack.addEventListener('click', e=>{
+  if(e.target.closest('.pin')) return;
+  const rect = scrubTrack.getBoundingClientRect();
+  const frac = (e.clientX-rect.left)/rect.width;
+  video.currentTime = frac*video.duration;
+});
+
+// ---------- playback + overlay ----------
+function initPlayback(){
+  function sizeCanvas(){
+    overlay.width = video.clientWidth;
+    overlay.height = video.clientHeight;
+    overlay.style.width = video.clientWidth + 'px';
+    overlay.style.height = video.clientHeight + 'px';
+    overlay.style.left = video.offsetLeft + 'px';
+    overlay.style.top = video.offsetTop + 'px';
+  }
+  video.addEventListener('loadedmetadata', sizeCanvas);
+  window.addEventListener('resize', sizeCanvas);
+  setTimeout(sizeCanvas, 50);
+  setTimeout(sizeCanvas, 300);
+
+  playBtn.addEventListener('click', ()=>{
+    if(video.paused){ video.play(); playBtn.textContent='❚❚'; }
+    else { video.pause(); playBtn.textContent='▶'; }
+  });
+  video.addEventListener('pause', ()=>{ playBtn.textContent='▶'; updateEditCursor(); });
+  video.addEventListener('play', updateEditCursor);
+  video.addEventListener('ended', ()=>playBtn.textContent='▶');
+  setTimeout(updateEditCursor, 50);
+
+  stepBack.addEventListener('click', ()=>{
+    const i = Math.max(0, nearestFrameIndex(video.currentTime)-1);
+    video.currentTime = frames[i].t;
+  });
+  stepFwd.addEventListener('click', ()=>{
+    const i = Math.min(frames.length-1, nearestFrameIndex(video.currentTime)+1);
+    video.currentTime = frames[i].t;
+  });
+
+  function loop(){
+    drawOverlayAtTime(video.currentTime);
+    const duration = video.duration;
+    scrubFill.style.width = `${(video.currentTime/duration)*100}%`;
+    timeReadout.textContent = `${video.currentTime.toFixed(3)}s`;
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+
+// ---------- editable overlay state ----------
+let skeletonMode = false;
+let batTrackingOn = false;
+let batMarks = {}; // sparse, keyed by frame index: {knob:{x,y}, tip:{x,y}}
+let lastDrawnPoints = []; // hit-test targets for dragging: {x,y,kind,ref,frameIndex}
+let draggingPoint = null;
+
+function getBatMarks(frameIndex){
+  if(!batMarks[frameIndex]){
+    const f = frames[frameIndex];
+    const wrist = f.lm[frontIdx.wrist];
+    const elbow = f.lm[frontIdx.elbow];
+    const dx = wrist.x-elbow.x, dy = wrist.y-elbow.y;
+    batMarks[frameIndex] = {
+      knob: {x:wrist.x, y:wrist.y},
+      tip: {x:wrist.x+dx*2.2, y:wrist.y+dy*2.2}
+    };
+  }
+  return batMarks[frameIndex];
+}
+
+// ---- bone-style skeleton rendering (stylized, not literal anatomy) ----
+// Simple two-tone skeleton, matching a standard pose-diagram look: thin
+// colored bones (one color per body side) and small round joint markers.
+const SIDE_LEFT = '#3FB39A';   // teal
+const SIDE_RIGHT = '#E2607A';  // coral/red
+const SIDE_CENTER = '#D9D5C8'; // spine / crossing connections
+function sideOf(idx){
+  if(idx === 0) return 'center';
+  return (idx % 2 === 1) ? 'left' : 'right'; // MediaPipe pose: odd = left, even = right
+}
+function boneColor(a, b){
+  const sa = sideOf(a), sb = sideOf(b);
+  if(sa === 'left' || sb === 'left'){ if(sa!=='right' && sb!=='right') return SIDE_LEFT; }
+  if(sa === 'right' || sb === 'right'){ if(sa!=='left' && sb!=='left') return SIDE_RIGHT; }
+  return SIDE_CENTER;
+}
+
+// joint dots colored by body part rather than by side, with a legend to match
+const JOINT_COLORS = {
+  head:      {color:'#3FA7FF', label:'Head',     idx:[0]},
+  shoulders: {color:'#9B6BD9', label:'Shoulders', idx:[11,12]},
+  elbows:    {color:'#E08A3C', label:'Elbows',    idx:[13,14]},
+  hands:     {color:'#E24C4C', label:'Hands',     idx:[15,16]},
+  hips:      {color:'#4A4A52', label:'Hips',      idx:[23,24]},
+  knees:     {color:'#E8D24C', label:'Knees',     idx:[25,26]},
+  feet:      {color:'#4CAF7D', label:'Feet',      idx:[27,28,29,30,31,32]},
+};
+const JOINT_COLOR_BY_IDX = {};
+Object.values(JOINT_COLORS).forEach(g=>g.idx.forEach(i=>{ JOINT_COLOR_BY_IDX[i]=g.color; }));
+
+function drawOverlayAtTime(t){
+  ctx.clearRect(0,0,overlay.width, overlay.height);
+  lastDrawnPoints = [];
+  if(!frames.length) return;
+  const i = nearestFrameIndex(t);
+  const lm = frames[i].lm;
+  const sx = overlay.width / videoW;
+  const sy = overlay.height / videoH;
+  const P = (idx)=>({x:lm[idx].x*sx, y:lm[idx].y*sy});
+
+  if(skeletonMode){
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 3;
+    CONNECTIONS.forEach(([a,b])=>{
+      const pa=P(a), pb=P(b);
+      ctx.strokeStyle = boneColor(a,b);
+      ctx.beginPath();
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      ctx.stroke();
+    });
+    const ptIdx = [0,11,12,13,14,15,16,23,24,25,26,27,28,29,30,31,32];
+    ptIdx.forEach(idx=>{
+      const p = P(idx);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+      ctx.fillStyle = JOINT_COLOR_BY_IDX[idx] || '#D9D5C8';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(242,239,234,0.85)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    });
+  } else {
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(193,96,46,0.85)';
+    ctx.lineWidth = 2.5;
+    CONNECTIONS.forEach(([a,b])=>{
+      const pa=P(a), pb=P(b);
+      ctx.beginPath();
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      ctx.stroke();
+    });
+    const ptIdx = [0,11,12,13,14,15,16,23,24,25,26,27,28,29,30,31,32];
+    ptIdx.forEach(idx=>{
+      const p = P(idx);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5.5, 0, Math.PI*2);
+      ctx.fillStyle = JOINT_COLOR_BY_IDX[idx] || '#3FA7FF';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(242,239,234,0.9)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+  }
+
+  // register hit-test points regardless of view mode (dragging works in both)
+  const ptIdx = [0,11,12,13,14,15,16,23,24,25,26,27,28,29,30,31,32];
+  ptIdx.forEach(idx=>{
+    const p = P(idx);
+    lastDrawnPoints.push({x:p.x, y:p.y, kind:'body', ref:idx, frameIndex:i});
+  });
+
+  if(batTrackingOn){
+    const marks = getBatMarks(i);
+    ctx.strokeStyle = 'rgba(212,175,55,0.9)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(marks.knob.x*sx, marks.knob.y*sy);
+    ctx.lineTo(marks.tip.x*sx, marks.tip.y*sy);
+    ctx.stroke();
+    [['knob',marks.knob,'#D4AF37'],['tip',marks.tip,'#F0D98C']].forEach(([ref,p,color])=>{
+      const px = p.x*sx, py = p.y*sy;
+      ctx.beginPath();
+      ctx.arc(px, py, 8, 0, Math.PI*2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#0B0D10';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      lastDrawnPoints.push({x:px, y:py, kind:'bat', ref, frameIndex:i});
+    });
+  }
+}
+
+function updateEditCursor(){
+  overlay.style.cursor = video.paused ? 'crosshair' : 'default';
+}
+
+overlay.addEventListener('pointerdown', e=>{
+  if(!video.paused || !lastDrawnPoints.length) return;
+  const rect = overlay.getBoundingClientRect();
+  const mx = (e.clientX-rect.left) * (overlay.width/rect.width);
+  const my = (e.clientY-rect.top) * (overlay.height/rect.height);
+  let closest=null, closestD=20;
+  lastDrawnPoints.forEach(p=>{
+    const d = Math.hypot(p.x-mx, p.y-my);
+    if(d<closestD){ closestD=d; closest=p; }
+  });
+  if(closest){
+    draggingPoint = closest;
+    overlay.setPointerCapture(e.pointerId);
+    overlay.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
+});
+overlay.addEventListener('pointermove', e=>{
+  if(!draggingPoint) return;
+  const rect = overlay.getBoundingClientRect();
+  const mx = (e.clientX-rect.left) * (overlay.width/rect.width);
+  const my = (e.clientY-rect.top) * (overlay.height/rect.height);
+  const sx = overlay.width / videoW, sy = overlay.height / videoH;
+  const vx = mx/sx, vy = my/sy;
+  if(draggingPoint.kind === 'body'){
+    frames[draggingPoint.frameIndex].lm[draggingPoint.ref] = {x:vx, y:vy};
+  } else {
+    getBatMarks(draggingPoint.frameIndex)[draggingPoint.ref] = {x:vx, y:vy};
+  }
+  drawOverlayAtTime(video.currentTime);
+});
+window.addEventListener('pointerup', ()=>{
+  if(draggingPoint){
+    draggingPoint = null;
+    updateEditCursor();
+    if(frames.length) computeAndRender();
+  }
+});
+
+document.querySelectorAll('.view-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    skeletonMode = btn.dataset.view === 'skeleton';
+    video.style.opacity = skeletonMode ? '0' : '1';
+    drawOverlayAtTime(video.currentTime);
+  });
+});
+
+const batTrackBtn = document.getElementById('batTrackBtn');
+batTrackBtn.addEventListener('click', ()=>{
+  batTrackingOn = !batTrackingOn;
+  batTrackBtn.textContent = `Track Bat: ${batTrackingOn ? 'On' : 'Off'}`;
+  batTrackBtn.style.borderColor = batTrackingOn ? 'var(--clay)' : '';
+  drawOverlayAtTime(video.currentTime);
+});
+
+document.querySelectorAll('[data-jump]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    if(!video.paused) video.pause();
+    const key = btn.dataset.jump;
+    if(frames.length && keyIdx[key] !== undefined){
+      video.currentTime = frames[keyIdx[key]].t;
+    }
+  });
+});
+
+reanalyzeBtn.addEventListener('click', ()=>{
+  workspace.style.display='none';
+  dashboard.style.display='none';
+  footerNote.style.display='none';
+  uploadStage.style.display='block';
+  fileInput.value='';
+  batMarks = {};
+  batTrackingOn = false;
+  skeletonMode = false;
+  video.style.opacity = '1';
+  const btb = document.getElementById('batTrackBtn');
+  if(btb){ btb.textContent = 'Track Bat: Off'; btb.style.borderColor = ''; }
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view==='video'));
+});
+
+// ---------- metrics ----------
+function bodyScale(loadFrame){
+  const lm = loadFrame.lm;
+  const shoulderMid = mid(lm[11], lm[12]);
+  const ankleMid = mid(lm[27], lm[28]);
+  return dist(shoulderMid, ankleMid) * 1.65; // approx full height from shoulder-to-ankle span
+}
+
+function computeAndRender(){
+  const L = frames[keyIdx.load];
+  const FP = frames[keyIdx.fp];
+  const C = frames[keyIdx.contact];
+  const scale = bodyScale(L);
+
+  const fmt = (v,d=1)=> Number.isFinite(v) ? v.toFixed(d) : '—';
+
+  // ---- Hip-Shoulder Separation @ Foot Plant ----
+  const hipAngRaw = frames.map(f=>lineAngleDeg(f.lm[23], f.lm[24]));
+  const shAngRaw  = frames.map(f=>lineAngleDeg(f.lm[11], f.lm[12]));
+  const hipAng = unwrap(hipAngRaw);
+  const shAng  = unwrap(shAngRaw);
+  const hipRot = hipAng.map(a=>a-hipAng[keyIdx.load]);
+  const shRot  = shAng.map(a=>a-shAng[keyIdx.load]);
+  const separation = shRot.map((s,i)=>s-hipRot[i]);
+  const sepAtFP = Math.abs(separation[keyIdx.fp]);
+
+  // ---- Kinematic Sequence (Pelvis -> Torso), relative timing only ----
+  // raw time is meaningless across clips shot at different slow-mo speeds, so every
+  // segment's peak is expressed as a % position within the load->contact window.
+  const times = frames.map(f=>f.t);
+  const hipVel = smooth(derivative(hipAng, times), 5);
+  const shVel  = smooth(derivative(shAng, times), 5);
+
+  const winStart = keyIdx.load, winEnd = Math.max(keyIdx.contact+1, winStart+2);
+  function peakIndex(vel){
+    let pi = winStart, pv = 0;
+    for(let i=winStart;i<winEnd;i++){ if(Math.abs(vel[i])>Math.abs(pv)){ pv=vel[i]; pi=i; } }
+    return pi;
+  }
+  const hipPeakI = peakIndex(hipVel);
+  const shPeakI = peakIndex(shVel);
+
+  const windowDur = (frames[winEnd-1].t - frames[winStart].t) || 1;
+  const pctOf = (i)=> ((frames[i].t - frames[winStart].t) / windowDur) * 100;
+  const segments = [
+    {key:'pelvis', label:'Pelvis', pct: pctOf(hipPeakI)},
+    {key:'torso', label:'Torso', pct: pctOf(shPeakI)},
+  ];
+  const inOrder = segments[0].pct <= segments[1].pct;
+
+  // ---- Point of Contact, relative to body ----
+  // uses the tracked bat tip if you've placed bat markers at Contact, otherwise
+  // falls back to the lead-hand position as a proxy
+  const comContact = mid(C.lm[23], C.lm[24]);
+  const forwardSign = Math.sign(L.lm[frontIdx.ankle].x - L.lm[backIdx.ankle].x) || 1;
+  const contactBat = batMarks[keyIdx.contact] || null;
+  const pocSourceX = contactBat ? contactBat.tip.x : C.lm[frontIdx.wrist].x;
+  const poc = ((pocSourceX - comContact.x) * forwardSign) / scale * 100;
+  const pocSource = contactBat ? 'tracked bat' : 'hand proxy';
+
+  // ---- Stride Length, Load -> Foot Plant ----
+  // anchored to Foot Plant, not Contact — Plant is a genuinely reliable
+  // detected event (a clean local min in ankle velocity), so this doesn't
+  // inherit Contact's uncertainty the way a Contact-anchored metric would
+  const strideLen = Math.abs(FP.lm[frontIdx.ankle].x - L.lm[frontIdx.ankle].x) / scale * 100;
+
+  // ---- Center of Mass Travel, Load -> Foot Plant ----
+  // hip midpoint displacement — same reasoning, anchored to Plant not Contact
+  const comLoad = mid(L.lm[23], L.lm[24]);
+  const comAtFP = mid(FP.lm[23], FP.lm[24]);
+  const comTravel = Math.hypot(comAtFP.x-comLoad.x, comAtFP.y-comLoad.y) / scale * 100;
+
+  // ---- Spine Tilt @ Contact ----
+  // this one DOES inherit Contact's uncertainty, unlike the two above —
+  // worth remembering when reading it, especially on a swing where the
+  // Contact marker needed a manual correction
+  function spineTiltAt(f){
+    const hipMid = mid(f.lm[23], f.lm[24]);
+    const shMid = mid(f.lm[11], f.lm[12]);
+    return lineAngleDeg(hipMid, shMid) + 90; // 0 = perfectly vertical
+  }
+  const spineTiltContact = spineTiltAt(C);
+
+  // ---- Front Knee @ Contact ----
+  const frontKneeContact = angleAt(C.lm[frontIdx.knee], C.lm[frontIdx.hip], C.lm[frontIdx.ankle]);
+
+  // ---- Head Drift, Load -> Contact ----
+  const headDX = (C.lm[0].x - L.lm[0].x) / scale * 100;
+  const headDY = (C.lm[0].y - L.lm[0].y) / scale * 100;
+  const headDrift = Math.hypot(headDX, headDY);
+
+  renderDashboard({ sepAtFP, segments, inOrder, poc, pocSource, strideLen, comTravel, spineTiltContact, frontKneeContact, headDrift }, fmt);
+}
+
+
+function renderDashboard(m, fmt){
+  dashboard.style.display='block';
+  lastMetrics = m;
+  lastFmt = fmt;
+
+  const sepFlag = m.sepAtFP >= 25 ? 'flag-good' : '';
+  const seqFlag = m.inOrder ? 'flag-good' : 'flag-warn';
+  const seqVerdict = m.inOrder
+    ? 'Efficient chain — pelvis leads, torso follows'
+    : 'Out of sequence — torso is peaking before (or with) the pelvis';
+
+  const dotColor = {pelvis:'#C1602E', torso:'#5C8A6E', arm:'#3FA7FF'};
+
+  // give dots a minimum visual gap on the timeline so close (or tied) peaks
+  // never collide — the real % values still show in the legend below
+  const ordered = [...m.segments].sort((a,b)=>a.pct-b.pct);
+  let prevPos = -Infinity;
+  ordered.forEach(s=>{
+    let p = Math.max(3, Math.min(97, s.pct));
+    if(p - prevPos < 9) p = prevPos + 9;
+    s.dispPct = Math.min(97, p);
+    prevPos = s.dispPct;
+  });
+
+  const seqDots = m.segments.map(s=>`
+    <div style="position:absolute; left:${s.dispPct}%; top:50%; transform:translate(-50%,-50%); width:14px; height:14px; border-radius:50%; background:${dotColor[s.key]}; border:2px solid #0B0D10;"></div>
+  `).join('');
+
+  const seqLegend = m.segments.map(s=>`
+    <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line);">
+      <div style="width:10px;height:10px;border-radius:50%;background:${dotColor[s.key]}; flex-shrink:0;"></div>
+      <div style="font-family:'Inter'; font-size:13px; color:var(--text); flex:1;">${s.label}</div>
+      <div style="font-family:'JetBrains Mono'; font-size:13px; color:var(--text-dim);">${fmt(s.pct,0)}%</div>
+    </div>
+  `).join('');
+
+  const pocLabel = m.poc >= 0 ? 'out front' : 'deep';
+
+  dashboard.innerHTML = `
+    <div class="stitch-divider"></div>
+
+    <div class="add-baseline-bar">
+      <input type="text" id="baselineNameInput" placeholder="Label this swing (e.g. player name)" />
+      <button class="btn" id="addToBaselineBtn">Add to Baseline</button>
+      <button class="btn ghost" id="compareToBaselineBtn">Compare to Baseline</button>
+      <span class="confirm" id="addToBaselineConfirm">Added ✓</span>
+    </div>
+
+    <div class="add-baseline-bar" style="margin-top:10px;">
+      <input type="text" id="clientNameInput" placeholder="Client name" />
+      <button class="btn" id="saveToClientBtn">Save to Client Swings</button>
+      <span class="confirm" id="saveToClientConfirm">Saved ✓</span>
+    </div>
+
+    <div id="comparisonPanel"></div>
+
+    <div class="section-head" style="margin-top:28px;"><span class="num">01</span><h2>Hip–Shoulder Separation</h2><span class="note">at foot plant</span></div>
+    <div class="grid">
+      <div class="card ${sepFlag}"><div class="label">Separation @ Foot Plant</div><div class="value">${fmt(m.sepAtFP,0)}<span class="unit">°</span></div><div class="sub">The "X-factor" — how much the shoulders stay closed relative to the hips as you land.</div></div>
+    </div>
+
+    <div class="section-head"><span class="num">02</span><h2>Stride &amp; Weight Shift</h2><span class="note">load → foot plant</span></div>
+    <div class="grid">
+      <div class="card"><div class="label">Stride Length</div><div class="value">${fmt(m.strideLen,1)}<span class="unit">% ht</span></div><div class="sub">Front foot travel, load → foot plant.</div></div>
+      <div class="card"><div class="label">Center of Mass Travel</div><div class="value">${fmt(m.comTravel,1)}<span class="unit">% ht</span></div><div class="sub">Hip midpoint displacement, load → foot plant.</div></div>
+    </div>
+
+    <div class="section-head"><span class="num">03</span><h2>Kinematic Sequence</h2><span class="note">relative timing, load → contact</span></div>
+    <div class="chart-card">
+      <div class="label">Peak rotation order — pelvis → torso</div>
+      <div style="position:relative; height:14px; margin:18px 8px 22px;">
+        <div style="position:absolute; left:0; right:0; top:50%; transform:translateY(-50%); height:2px; background:var(--line);"></div>
+        ${seqDots}
+      </div>
+      <div style="margin-top:4px;">${seqLegend}</div>
+    </div>
+    <div class="grid">
+      <div class="card ${seqFlag}" style="grid-column:1/-1;"><div class="label">Sequencing</div><div class="value" style="font-size:18px;">${seqVerdict}</div><div class="sub">Timing shown as % of your load → contact window, so it holds up across clips shot at different slow-mo speeds.</div></div>
+    </div>
+
+    <div class="section-head"><span class="num">04</span><h2>Point of Contact</h2><span class="note">relative to body</span></div>
+    <div class="grid">
+      <div class="card"><div class="label">Contact Point</div><div class="value">${fmt(Math.abs(m.poc),0)}<span class="unit">% ht ${pocLabel}</span></div><div class="sub">${m.pocSource === 'tracked bat' ? 'Using your tracked bat tip position at contact.' : 'Lead hand position vs. center of mass — a proxy, since no bat markers are placed at Contact yet.'}</div></div>
+    </div>
+
+    <div class="section-head"><span class="num">05</span><h2>Contact Posture</h2></div>
+    <div class="grid">
+      <div class="card"><div class="label">Front Knee @ Contact</div><div class="value">${fmt(m.frontKneeContact,0)}<span class="unit">°</span></div><div class="sub">Bracing on the front side through impact.</div></div>
+      <div class="card"><div class="label">Spine Tilt @ Contact</div><div class="value">${fmt(m.spineTiltContact,0)}<span class="unit">°</span></div><div class="sub">0° = perfectly vertical. Anchored to Contact, so double-check that marker if this looks off.</div></div>
+    </div>
+
+    <div class="section-head"><span class="num">06</span><h2>Stability</h2></div>
+    <div class="grid">
+      <div class="card"><div class="label">Head Drift</div><div class="value">${fmt(m.headDrift,1)}<span class="unit">% ht</span></div><div class="sub">Total head movement, load → contact. Lower is more stable.</div></div>
+    </div>
+  `;
+
+  document.getElementById('addToBaselineBtn').addEventListener('click', addCurrentToBaseline);
+  document.getElementById('compareToBaselineBtn').addEventListener('click', compareToBaseline);
+  document.getElementById('saveToClientBtn').addEventListener('click', saveCurrentToClient);
+
+  dashboard.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ---------- Baseline tab ----------
+const BASELINE_KEY = 'swinglab_baseline_v1';
+let lastMetrics = null;
+let lastFmt = null;
+
+function loadBaseline(){
+  try{ return JSON.parse(localStorage.getItem(BASELINE_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function saveBaselineArr(arr){
+  try{ localStorage.setItem(BASELINE_KEY, JSON.stringify(arr)); }
+  catch(e){ console.warn('Could not save baseline (storage unavailable):', e); }
+}
+
+// ---------- backup (export/import) ----------
+// Browser storage tied to a bookmarked local file is genuinely fragile —
+// it can reset if the file gets re-downloaded, moved, or renamed. This is a
+// real backup that lives outside the browser entirely: a plain JSON file
+// you control, that covers both Baseline and Client Swings in one file,
+// that can be reloaded into any copy of this app on any device.
+document.getElementById('exportBaselineBtn').addEventListener('click', ()=>{
+  const baseline = loadBaseline();
+  const clients = loadClients();
+  const prescriptions = loadPrescriptions();
+  const payload = {
+    app: 'swing-lab-backup',
+    exportedAt: new Date().toISOString(),
+    baselineCount: baseline.length,
+    clientCount: clients.length,
+    baseline,
+    clients,
+    prescriptions
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `swing-lab-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  const confirm = document.getElementById('exportBaselineConfirm');
+  confirm.classList.add('show');
+  setTimeout(()=>confirm.classList.remove('show'), 1800);
+});
+
+document.getElementById('importBaselineBtn').addEventListener('click', ()=>{
+  document.getElementById('importBaselineFile').click();
+});
+document.getElementById('importBaselineFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+
+    // supports the new combined format, and the older baseline-only export
+    const incomingBaseline = Array.isArray(parsed.baseline) ? parsed.baseline
+      : (Array.isArray(parsed.entries) ? parsed.entries // old format
+      : (Array.isArray(parsed) ? parsed : []));
+    const incomingClients = Array.isArray(parsed.clients) ? parsed.clients : [];
+
+    if(incomingBaseline.length === 0 && incomingClients.length === 0){
+      throw new Error('Not a recognized backup file');
+    }
+
+    const existingBaseline = loadBaseline();
+    const existingBaselineTs = new Set(existingBaseline.map(e=>e.ts));
+    const mergedBaseline = existingBaseline.slice();
+    let addedBaseline = 0;
+    incomingBaseline.forEach(entry=>{
+      if(entry && typeof entry === 'object' && !existingBaselineTs.has(entry.ts)){
+        mergedBaseline.push(entry);
+        existingBaselineTs.add(entry.ts);
+        addedBaseline++;
+      }
+    });
+    saveBaselineArr(mergedBaseline);
+
+    const existingClients = loadClients();
+    const existingClientsTs = new Set(existingClients.map(e=>e.ts));
+    const mergedClients = existingClients.slice();
+    let addedClients = 0;
+    incomingClients.forEach(entry=>{
+      if(entry && typeof entry === 'object' && !existingClientsTs.has(entry.ts)){
+        mergedClients.push(entry);
+        existingClientsTs.add(entry.ts);
+        addedClients++;
+      }
+    });
+    saveClientsArr(mergedClients);
+
+    // merge prescriptions — keep any existing note, add ones we don't have
+    if(parsed.prescriptions && typeof parsed.prescriptions === 'object'){
+      const existingRx = loadPrescriptions();
+      Object.entries(parsed.prescriptions).forEach(([client, text])=>{
+        if(!(client in existingRx) && text){ existingRx[client] = text; }
+      });
+      try{ localStorage.setItem(PRESCRIPTION_KEY, JSON.stringify(existingRx)); }
+      catch(e){ console.warn('Could not save imported prescriptions:', e); }
+    }
+
+    renderBaselineTab();
+    renderClientsTab();
+
+    const confirm = document.getElementById('importBaselineConfirm');
+    confirm.textContent = `Imported ${addedBaseline} baseline, ${addedClients} client swing${addedClients===1?'':'s'} ✓`;
+    confirm.classList.add('show');
+    setTimeout(()=>confirm.classList.remove('show'), 2600);
+  }catch(err){
+    console.error('Backup import failed:', err);
+    alert("Couldn't read that file — make sure it's a backup exported from Swing Lab.");
+  }
+  e.target.value = '';
+});
+
+function addCurrentToBaseline(){
+  if(!lastMetrics) return;
+  const input = document.getElementById('baselineNameInput');
+  const name = (input.value || '').trim() || `Swing ${new Date().toLocaleDateString()}`;
+  const entry = {
+    name,
+    ts: Date.now(),
+    sepAtFP: lastMetrics.sepAtFP,
+    pelvisPct: lastMetrics.segments[0].pct,
+    torsoPct: lastMetrics.segments[1].pct,
+    inOrder: lastMetrics.inOrder,
+    poc: lastMetrics.poc,
+    strideLen: lastMetrics.strideLen,
+    comTravel: lastMetrics.comTravel,
+    spineTiltContact: lastMetrics.spineTiltContact,
+    frontKneeContact: lastMetrics.frontKneeContact,
+    headDrift: lastMetrics.headDrift
+  };
+  const arr = loadBaseline();
+  arr.push(entry);
+  saveBaselineArr(arr);
+  input.value = '';
+  const confirm = document.getElementById('addToBaselineConfirm');
+  confirm.classList.add('show');
+  setTimeout(()=>confirm.classList.remove('show'), 1800);
+  renderBaselineTab();
+}
+
+// ---------- Client Swings ----------
+// Same idea as baseline entries, but kept individual per client rather than
+// averaged — this is for tracking one player's swing over time, not
+// building a reference population.
+const CLIENT_KEY = 'swinglab_clients_v1';
+function loadClients(){
+  try{ return JSON.parse(localStorage.getItem(CLIENT_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function saveClientsArr(arr){
+  try{ localStorage.setItem(CLIENT_KEY, JSON.stringify(arr)); }
+  catch(e){ console.warn('Could not save client swings (storage unavailable):', e); }
+}
+
+// Per-client drill prescriptions — a free-text note per athlete (paste in a
+// routine from the Drills tab, or type your own). Keyed by client name, kept
+// separate from swing data so it survives independently.
+const PRESCRIPTION_KEY = 'swinglab_prescriptions_v1';
+function loadPrescriptions(){
+  try{ return JSON.parse(localStorage.getItem(PRESCRIPTION_KEY) || '{}'); }
+  catch(e){ return {}; }
+}
+function savePrescription(clientName, text){
+  const all = loadPrescriptions();
+  if(text && text.trim()) all[clientName] = text;
+  else delete all[clientName];
+  try{ localStorage.setItem(PRESCRIPTION_KEY, JSON.stringify(all)); }
+  catch(e){ console.warn('Could not save prescription (storage unavailable):', e); }
+}
+
+function saveCurrentToClient(){
+  if(!lastMetrics) return;
+  const input = document.getElementById('clientNameInput');
+  const client = (input.value || '').trim();
+  if(!client){
+    input.focus();
+    return;
+  }
+  const entry = {
+    client,
+    ts: Date.now(),
+    sepAtFP: lastMetrics.sepAtFP,
+    pelvisPct: lastMetrics.segments[0].pct,
+    torsoPct: lastMetrics.segments[1].pct,
+    inOrder: lastMetrics.inOrder,
+    poc: lastMetrics.poc,
+    strideLen: lastMetrics.strideLen,
+    comTravel: lastMetrics.comTravel,
+    spineTiltContact: lastMetrics.spineTiltContact,
+    frontKneeContact: lastMetrics.frontKneeContact,
+    headDrift: lastMetrics.headDrift
+  };
+  const arr = loadClients();
+  arr.push(entry);
+  saveClientsArr(arr);
+  input.value = '';
+  const confirm = document.getElementById('saveToClientConfirm');
+  confirm.classList.add('show');
+  setTimeout(()=>confirm.classList.remove('show'), 1800);
+  renderClientsTab();
+}
+
+function removeClientSwing(ts){
+  const arr = loadClients().filter(e=>e.ts !== ts);
+  saveClientsArr(arr);
+  renderClientsTab();
+}
+
+function removeClient(clientName){
+  if(!confirm(`Remove all logged swings for "${clientName}"? This can't be undone.`)) return;
+  const arr = loadClients().filter(e=>e.client !== clientName);
+  saveClientsArr(arr);
+  renderClientsTab();
+}
+
+let clientOpenState = {}; // remembers which client cards are expanded
+
+function renderClientsTab(){
+  const arr = loadClients();
+  const empty = document.getElementById('clientsEmpty');
+  const content = document.getElementById('clientsContent');
+  document.getElementById('clientsCount').textContent = `${arr.length} swing${arr.length===1?'':'s'} logged`;
+
+  if(arr.length === 0){
+    empty.style.display = 'block';
+    content.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  content.style.display = 'block';
+
+  const fmt = (v,d=1)=> Number.isFinite(v) ? v.toFixed(d) : '—';
+  const filterText = (document.getElementById('clientSearchInput').value || '').trim().toLowerCase();
+
+  // group by client name (case/whitespace-insensitive)
+  const groups = {};
+  arr.forEach(e=>{
+    const key = (e.client || 'Unnamed').trim();
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+
+  const names = Object.keys(groups)
+    .filter(n => !filterText || n.toLowerCase().includes(filterText))
+    .sort((a,b)=>{
+      const latestA = Math.max(...groups[a].map(e=>e.ts));
+      const latestB = Math.max(...groups[b].map(e=>e.ts));
+      return latestB - latestA; // most recently active client first
+    });
+
+  if(names.length === 0){
+    document.getElementById('clientsList').innerHTML = `<div class="chart-card"><div class="sub">No clients match "${escapeHtml(filterText)}".</div></div>`;
+    return;
+  }
+
+  const prescriptions = loadPrescriptions();
+
+  document.getElementById('clientsList').innerHTML = names.map(name=>{
+    const swings = [...groups[name]].sort((a,b)=>b.ts-a.ts);
+    const isOpen = clientOpenState[name] !== false; // default open
+    const rx = prescriptions[name] || '';
+    const rows = swings.map(e=>`
+      <div class="client-swing-row">
+        <div class="csr-top">
+          <span class="csr-date">${new Date(e.ts).toLocaleDateString()} · ${new Date(e.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+          <button class="remove-btn" data-remove-swing="${e.ts}" title="Remove this swing" style="margin-left:auto;">✕</button>
+        </div>
+        <div class="csr-stats">
+          <span>Sep ${fmt(e.sepAtFP,0)}°</span>
+          <span>Stride ${fmt(e.strideLen,1)}% ht</span>
+          <span>COM ${fmt(e.comTravel,1)}% ht</span>
+          <span>POC ${fmt(Math.abs(e.poc),0)}% ht</span>
+          <span>Spine ${fmt(e.spineTiltContact,0)}°</span>
+          <span>Knee ${fmt(e.frontKneeContact,0)}°</span>
+          <span>Head ${fmt(e.headDrift,1)}% ht</span>
+          <span>${e.inOrder===true?'Sequenced ✓':e.inOrder===false?'Out of sequence':''}</span>
+        </div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="client-card">
+        <div class="client-head" data-client-toggle="${escapeHtml(name)}">
+          <h3>${escapeHtml(name)}</h3>
+          <span class="client-count">${swings.length} swing${swings.length===1?'':'s'}</span>
+          <span class="client-toggle">${isOpen ? '▾ collapse' : '▸ expand'}</span>
+          <button class="client-remove" data-remove-client="${escapeHtml(name)}">Remove client</button>
+        </div>
+        <div class="client-swings ${isOpen?'open':''}">
+          <div class="rx-block">
+            <div class="rx-head">
+              <span class="rx-label">Drill Prescription</span>
+              <span class="confirm rx-saved" data-rx-saved="${escapeHtml(name)}">Saved ✓</span>
+            </div>
+            <textarea class="rx-textarea" data-rx="${escapeHtml(name)}" placeholder="Paste a routine from the Drills tab (Copy Routine as Text), or type your own prescription for ${escapeHtml(name)}…">${escapeHtml(rx)}</textarea>
+          </div>
+          ${rows}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.querySelectorAll('[data-client-toggle]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      if(e.target.closest('.client-remove')) return;
+      const name = el.dataset.clientToggle;
+      clientOpenState[name] = !(clientOpenState[name] !== false);
+      renderClientsTab();
+    });
+  });
+  document.querySelectorAll('[data-remove-client]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      removeClient(btn.dataset.removeClient);
+    });
+  });
+  document.querySelectorAll('[data-remove-swing]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      removeClientSwing(Number(btn.dataset.removeSwing));
+    });
+  });
+  // Prescription textareas: autosave on edit (debounced), don't collapse the
+  // card while typing, and flash a "Saved" confirmation.
+  document.querySelectorAll('[data-rx]').forEach(ta=>{
+    const name = ta.dataset.rx;
+    let timer = null;
+    ta.addEventListener('click', e=>e.stopPropagation());
+    ta.addEventListener('input', ()=>{
+      clearTimeout(timer);
+      timer = setTimeout(()=>{
+        savePrescription(name, ta.value);
+        const flag = document.querySelector(`[data-rx-saved="${CSS.escape(name)}"]`);
+        if(flag){ flag.classList.add('show'); setTimeout(()=>flag.classList.remove('show'), 1400); }
+      }, 500);
+    });
+  });
+}
+
+document.getElementById('clientSearchInput').addEventListener('input', renderClientsTab);
+
+// ---------- manual baseline entry ----------
+const manualEntryToggle = document.getElementById('manualEntryToggle');
+const manualEntryForm = document.getElementById('manualEntryForm');
+manualEntryToggle.addEventListener('click', ()=>{
+  manualEntryForm.style.display = manualEntryForm.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('manualEntryCancel').addEventListener('click', ()=>{
+  manualEntryForm.style.display = 'none';
+});
+
+function numOrUndef(id){
+  const v = document.getElementById(id).value;
+  if(v === '' || v === null) return undefined;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+document.getElementById('manualEntrySubmit').addEventListener('click', ()=>{
+  const name = (document.getElementById('mLabel').value || '').trim() || `Manual entry ${new Date().toLocaleDateString()}`;
+  const pocDir = parseFloat(document.getElementById('mPocDir').value) || 1;
+  const pocRaw = numOrUndef('mPoc');
+  const seqVal = document.getElementById('mSeq').value;
+
+  const entry = {
+    name,
+    ts: Date.now(),
+    manual: true,
+    sepAtFP: numOrUndef('mSep'),
+    strideLen: numOrUndef('mStride'),
+    comTravel: numOrUndef('mCom'),
+    poc: pocRaw !== undefined ? Math.abs(pocRaw) * pocDir : undefined,
+    spineTiltContact: numOrUndef('mSpine'),
+    frontKneeContact: numOrUndef('mKnee'),
+    headDrift: numOrUndef('mHead'),
+    inOrder: seqVal === 'yes' ? true : (seqVal === 'no' ? false : undefined)
+  };
+
+  const hasAnyValue = ['sepAtFP','strideLen','comTravel','poc','spineTiltContact','frontKneeContact','headDrift']
+    .some(k=>Number.isFinite(entry[k]));
+  if(!hasAnyValue){
+    document.getElementById('mSep').focus();
+    return;
+  }
+
+  const arr = loadBaseline();
+  arr.push(entry);
+  saveBaselineArr(arr);
+
+  ['mLabel','mSep','mStride','mCom','mPoc','mSpine','mKnee','mHead'].forEach(id=>{
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('mPocDir').value = '1';
+  document.getElementById('mSeq').value = 'unknown';
+
+  const confirm = document.getElementById('manualEntryConfirm');
+  confirm.classList.add('show');
+  setTimeout(()=>confirm.classList.remove('show'), 1800);
+  renderBaselineTab();
+});
+
+function removeBaselineEntry(ts){
+  const arr = loadBaseline().filter(e=>e.ts !== ts);
+  saveBaselineArr(arr);
+  renderBaselineTab();
+}
+
+function meanStd(arr){
+  const clean = arr.filter(v=>Number.isFinite(v));
+  const n = clean.length;
+  if(!n) return {mean:0, std:0, n:0};
+  const mean = clean.reduce((a,b)=>a+b,0)/n;
+  const variance = clean.reduce((a,b)=>a+(b-mean)*(b-mean),0)/n;
+  return {mean, std:Math.sqrt(variance), n};
+}
+
+function compareToBaseline(){
+  const panel = document.getElementById('comparisonPanel');
+  if(!panel || !lastMetrics) return;
+  const arr = loadBaseline();
+
+  if(arr.length === 0){
+    panel.innerHTML = `<div class="chart-card"><div class="label">Vs. Baseline</div><div class="sub">No baseline swings logged yet — add a few MLB swings first, then this'll show how this swing compares.</div></div>`;
+    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+    return;
+  }
+
+  const n = arr.length;
+  const fmt = lastFmt;
+  const defs = [
+    {key:'sepAtFP', label:'Separation @ Foot Plant', unit:'°', current:lastMetrics.sepAtFP},
+    {key:'strideLen', label:'Stride Length', unit:'% ht', current:lastMetrics.strideLen},
+    {key:'comTravel', label:'Center of Mass Travel', unit:'% ht', current:lastMetrics.comTravel},
+    {key:'poc', label:'Point of Contact', unit:'% ht', current:lastMetrics.poc, abs:true},
+    {key:'spineTiltContact', label:'Spine Tilt @ Contact', unit:'°', current:lastMetrics.spineTiltContact},
+    {key:'frontKneeContact', label:'Front Knee @ Contact', unit:'°', current:lastMetrics.frontKneeContact},
+    {key:'headDrift', label:'Head Drift', unit:'% ht', current:lastMetrics.headDrift},
+  ];
+
+  const rows = defs.map(d=>{
+    const stats = meanStd(arr.map(e=>e[d.key]));
+    const diff = d.current - stats.mean;
+    const z = stats.std > 0.0001 ? diff/stats.std : 0;
+    const isOutlier = n>=3 && Math.abs(z) >= 1.5;
+    const dispCurrent = d.abs ? Math.abs(d.current) : d.current;
+    const dispMean = d.abs ? Math.abs(stats.mean) : stats.mean;
+    return `
+      <div class="baseline-row">
+        <div style="flex:1;">
+          <div class="name">${d.label}${isOutlier ? ' <span style="color:var(--stitch);">— outlier</span>' : ''}</div>
+          <div class="date">You: ${fmt(dispCurrent,1)}${d.unit} · Baseline avg: ${fmt(dispMean,1)}${d.unit}</div>
+        </div>
+        <div class="stats" style="margin-left:0;">
+          <span style="color:${isOutlier?'var(--stitch)':'var(--text-dim)'};">${diff>=0?'+':''}${fmt(diff,1)}${d.unit}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  const inOrderCount = arr.filter(e=>e.inOrder).length;
+  const seqNote = lastMetrics.inOrder
+    ? `Sequenced correctly (pelvis before torso) — matches ${inOrderCount}/${n} baseline swings.`
+    : `Out of sequence (torso peaking before/with pelvis) — ${inOrderCount}/${n} baseline swings sequence correctly. This is worth a look.`;
+
+  panel.innerHTML = `
+    <div class="chart-card">
+      <div class="label">Vs. Baseline (${n} swing${n===1?'':'s'})</div>
+      ${rows}
+      <div class="baseline-row"><div class="name">Sequencing</div></div>
+      <div class="sub" style="margin-top:2px; margin-bottom:10px;">${seqNote}</div>
+      <div class="sub">${n<3 ? 'Add at least 2-3 baseline swings for outlier flags to mean much — right now this is just a straight comparison.' : 'Outlier = 1.5+ standard deviations from your baseline average.'}</div>
+    </div>
+  `;
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function renderBaselineTab(){
+  const arr = loadBaseline();
+  const countEl = document.getElementById('baselineCount');
+  countEl.textContent = `${arr.length} swing${arr.length===1?'':'s'} logged`;
+
+  const empty = document.getElementById('baselineEmpty');
+  const content = document.getElementById('baselineContent');
+
+  if(arr.length === 0){
+    empty.style.display = 'block';
+    content.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  content.style.display = 'block';
+
+  const fmt = (v,d=1)=> Number.isFinite(v) ? v.toFixed(d) : '—';
+
+  const sep = meanStd(arr.map(e=>e.sepAtFP));
+  const stride = meanStd(arr.map(e=>e.strideLen));
+  const com = meanStd(arr.map(e=>e.comTravel));
+  const poc = meanStd(arr.map(e=>e.poc));
+  const spine = meanStd(arr.map(e=>e.spineTiltContact));
+  const knee = meanStd(arr.map(e=>e.frontKneeContact));
+  const head = meanStd(arr.map(e=>e.headDrift));
+  const pelvisPct = meanStd(arr.map(e=>e.pelvisPct));
+  const torsoPct = meanStd(arr.map(e=>e.torsoPct));
+  const inOrderCount = arr.filter(e=>e.inOrder).length;
+  const pocLabel = poc.mean >= 0 ? 'out front' : 'deep';
+
+  document.getElementById('baselineAvgGrid').innerHTML = `
+    <div class="card"><div class="label">Separation @ Foot Plant</div><div class="value">${fmt(sep.mean,0)}<span class="unit">° avg</span></div><div class="sub">± ${fmt(sep.std,0)}° across ${sep.n} swing${sep.n===1?'':'s'}</div></div>
+    <div class="card"><div class="label">Stride Length</div><div class="value">${fmt(stride.mean,1)}<span class="unit">% ht avg</span></div><div class="sub">± ${fmt(stride.std,1)}% ht${stride.n<arr.length?` (${stride.n} logged)`:''}</div></div>
+    <div class="card"><div class="label">Center of Mass Travel</div><div class="value">${fmt(com.mean,1)}<span class="unit">% ht avg</span></div><div class="sub">± ${fmt(com.std,1)}% ht${com.n<arr.length?` (${com.n} logged)`:''}</div></div>
+    <div class="card"><div class="label">Point of Contact</div><div class="value">${fmt(Math.abs(poc.mean),0)}<span class="unit">% ht ${pocLabel}</span></div><div class="sub">± ${fmt(poc.std,1)}% ht</div></div>
+    <div class="card"><div class="label">Spine Tilt @ Contact</div><div class="value">${fmt(spine.mean,0)}<span class="unit">° avg</span></div><div class="sub">± ${fmt(spine.std,0)}°${spine.n<arr.length?` (${spine.n} logged)`:''}</div></div>
+    <div class="card"><div class="label">Front Knee @ Contact</div><div class="value">${fmt(knee.mean,0)}<span class="unit">° avg</span></div><div class="sub">± ${fmt(knee.std,0)}°</div></div>
+    <div class="card"><div class="label">Head Drift</div><div class="value">${fmt(head.mean,1)}<span class="unit">% ht avg</span></div><div class="sub">± ${fmt(head.std,1)}% ht</div></div>
+    <div class="card" style="grid-column:1/-1;"><div class="label">Sequencing</div><div class="value" style="font-size:18px;">${inOrderCount}/${arr.length} swings pelvis-leads-torso</div><div class="sub">Avg peak timing — pelvis at ${fmt(pelvisPct.mean,0)}%, torso at ${fmt(torsoPct.mean,0)}% of load→contact</div></div>
+  `;
+
+  document.getElementById('baselineListNote').textContent = `newest first`;
+
+  const sorted = [...arr].sort((a,b)=>b.ts-a.ts);
+  document.getElementById('baselineList').innerHTML = sorted.map(e=>`
+    <div class="baseline-row">
+      <div>
+        <div class="name">${escapeHtml(e.name)}${e.manual ? ' <span style="color:var(--text-faint); font-weight:400;">(manual)</span>' : ''}</div>
+        <div class="date">${new Date(e.ts).toLocaleDateString()}</div>
+      </div>
+      <div class="stats">
+        <span>Sep ${fmt(e.sepAtFP,0)}°</span>
+        <span>POC ${fmt(Math.abs(e.poc),0)}%</span>
+        <span>Knee ${fmt(e.frontKneeContact,0)}°</span>
+      </div>
+      <button class="remove-btn" data-ts="${e.ts}" title="Remove">✕</button>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.remove-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      removeBaselineEntry(Number(btn.dataset.ts));
+    });
+  });
+}
+
+function escapeHtml(s){
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+// ---------- Drill Library ----------
+// Hitting-only, sourced strictly from Driveline (lead), BPC, and The Hitting
+// Vault. These are recommendations you pick from — nothing is auto-assigned.
+const selectedDrills = new Set();
+const DRILL_DB = {
+  sepAtFP: {
+    label: 'Hip-Shoulder Separation', unit:'°', fallbackScale: 8,
+    drills: [
+      {name:"Hook 'Em Drill", source:'Driveline', desc:'Start from a coiled, hip-hinged position so you feel the pelvis and trunk working independently before the swing begins.'},
+      {name:'Offset Closed Tee', source:'Driveline', desc:'Set the tee toward the inner third / lead hip so you have to rotate the pelvis first and create space — trains separation through a ball-flight constraint.'},
+      {name:'Hold-at-Launch Drill', source:'Hitting Vault', desc:'Stride and freeze in launch position with shoulders staying closed (bat knob pointed at the pitcher). Trains the feeling of the lower half opening while the upper half stays back.'},
+      {name:'Med Ball Rotational Throw', source:'Driveline', desc:'Load into the back hip and throw across your body — builds the pelvis-leads-trunk rotation pattern without a bat to compensate.'},
+    ]
+  },
+  sequencing: {
+    label: 'Kinematic Sequence', unit:'', fallbackScale: 1,
+    drills: [
+      {name:'Handle-Load / Long Bat Work', source:'Driveline', desc:"A longer or handle-loaded bat makes mistimed sequencing obvious — you can't muscle it, so pelvis-then-torso-then-hands gets reinforced by feel."},
+      {name:'Pull-Side Offset Tosses', source:'Driveline', desc:'Feed from an exaggerated pull-side angle (or aim at the lead hip) so you must rotate the pelvis on time to clear space — directly trains proper sequencing.'},
+      {name:'Controlled Fall to Launch', source:'Hitting Vault', desc:'Balance on the back leg, then fall into launch and pause. Builds rhythm and timing between the load and the lower half firing first.'},
+    ]
+  },
+  poc: {
+    label: 'Point of Contact', unit:'% ht', fallbackScale: 5,
+    drills: [
+      {name:'Nine-Zone Tee Ladder', source:'Driveline', desc:'Move the tee through deep/middle/front and inner/middle/outer positions, hitting line drives at each — dials in where your contact point actually is.'},
+      {name:'High/Middle/Low Ball-Flight Drill', source:'Driveline', desc:'Hit to specific field areas at different pitch heights, using posture to adjust — trains contact point and adjustability together.'},
+      {name:'Rope Med Ball (POC + Posture)', source:'BPC / Driveline', desc:'Med-ball rotational work cueing where you release out front — builds a feel for moving the contact point forward while keeping posture.'},
+      {name:'Stop-at-Contact Drill', source:'Hitting Vault', desc:'Swing and freeze exactly at your intended contact point for each zone, then repeat swinging through it — builds bat control and awareness of contact depth.'},
+    ]
+  },
+  strideLen: {
+    label: 'Stride Length', unit:'% ht', fallbackScale: 3,
+    drills: [
+      {name:'Stride-to-Half-Height Drill', source:'Hitting Vault', desc:'Set a target so your stride ends at ~50% of your height — trains a repeatable stride distance without lunging or reaching.'},
+      {name:'Stride-to-Tee Constraint', source:'Hitting Vault', desc:'Place a tee at your target stride distance and stride to it (not past it) — a physical constraint that regulates an over- or under-sized stride.'},
+    ]
+  },
+  comTravel: {
+    label: 'Center of Mass Travel', unit:'% ht', fallbackScale: 2.5,
+    drills: [
+      {name:'Controlled Fall Drill', source:'Hitting Vault', desc:'A smooth, balanced fall from balance-on-back-leg into launch — trains weight moving forward under control instead of a lunge.'},
+      {name:'Med Ball Shotput to Wall', source:'Driveline', desc:'Load the back hip and drive the ball into a wall — builds ground-up, lower-body-initiated force so weight transfers without the head drifting.'},
+      {name:'Firm Front-Side Hold', source:'BPC / Driveline', desc:'Cue the front leg to stop forward momentum at foot strike so you rotate around a fixed front side rather than sliding past it.'},
+    ]
+  },
+  spineTiltContact: {
+    label: 'Spine Tilt @ Contact', unit:'°', fallbackScale: 6,
+    drills: [
+      {name:'Rotate-and-Maintain-Posture Work', source:'Driveline', desc:'As you rotate, replace forward bend with side bend at the same rate so spine angle stays consistent into contact — keeps you on plane and adjustable.'},
+      {name:'Crossover "K-Posture" Drill', source:'Hitting Vault', desc:'Front foot crossed over back, forcing a slight shoulder tilt and forward lean — makes it hard to collapse the backside, grooving posture at contact.'},
+      {name:'High/Middle/Low Posture Adjust', source:'Driveline', desc:'Use posture (not the hands) to adjust to pitch height off the tee — reinforces maintaining spine tilt through contact at different heights.'},
+    ]
+  },
+  frontKneeContact: {
+    label: 'Front Knee @ Contact', unit:'°', fallbackScale: 8,
+    drills: [
+      {name:'Firm-Up-the-Front-Knee Cue', source:'Hitting Vault', desc:'As the bat nears contact the front knee firms up (firm, not locked) to act as the brakes — lets the hands and barrel reach max speed at contact.'},
+      {name:'Braced Landing Reps off Tee', source:'BPC / Driveline', desc:'Slow-motion swings freezing at foot plant to feel a front knee that is flexed but bracing, not collapsing or drifting forward.'},
+    ]
+  },
+  headDrift: {
+    label: 'Head Drift', unit:'% ht', fallbackScale: 2,
+    drills: [
+      {name:'Track-and-Catch Drill', source:'Hitting Vault', desc:'Load, stride, and attack a flipped ball but catch it at contact point instead of swinging — trains keeping the head down and still through contact.'},
+      {name:'Rotate-Around-a-Fixed-Head Cue', source:'Driveline', desc:'Off a tee, consciously rotate the body around a still head with eyes locked on the ball — builds the feel of turning behind the ball.'},
+      {name:'Head-Behind-Contact Check', source:'Hitting Vault', desc:'From the side, the head should stay in line with the back knee at contact (not drifting forward). Film it and check frame by frame.'},
+    ]
+  },
+};
+
+function renderDrillsTab(){
+  const empty = document.getElementById('drillsEmpty');
+  const content = document.getElementById('drillsContent');
+  const subtitle = document.getElementById('drillsSubtitle');
+
+  if(!lastMetrics){
+    empty.style.display = 'block';
+    content.style.display = 'none';
+    document.getElementById('drillsEmptyTitle').textContent = 'Analyze a swing first';
+    document.getElementById('drillsEmptyText').textContent = 'Head to the Analyze tab, run a swing through it, then come back here for a routine built off that swing vs. your baseline.';
+    subtitle.textContent = '';
+    return;
+  }
+
+  const arr = loadBaseline();
+  if(arr.length === 0){
+    empty.style.display = 'block';
+    content.style.display = 'none';
+    document.getElementById('drillsEmptyTitle').textContent = 'No baseline to compare against yet';
+    document.getElementById('drillsEmptyText').textContent = 'Log at least a few swings in the Baseline tab first — the routine is built from how this swing compares to that average.';
+    subtitle.textContent = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  content.style.display = 'block';
+  subtitle.textContent = `vs. ${arr.length} baseline swing${arr.length===1?'':'s'}`;
+
+  const fmt = (v,d=1)=> Number.isFinite(v) ? v.toFixed(d) : '—';
+  const current = {
+    sepAtFP: lastMetrics.sepAtFP,
+    poc: Math.abs(lastMetrics.poc),
+    strideLen: lastMetrics.strideLen,
+    comTravel: lastMetrics.comTravel,
+    spineTiltContact: lastMetrics.spineTiltContact,
+    frontKneeContact: lastMetrics.frontKneeContact,
+    headDrift: lastMetrics.headDrift,
+  };
+  const baselineVals = {
+    sepAtFP: arr.map(e=>e.sepAtFP),
+    poc: arr.map(e=>Math.abs(e.poc)),
+    strideLen: arr.map(e=>e.strideLen),
+    comTravel: arr.map(e=>e.comTravel),
+    spineTiltContact: arr.map(e=>e.spineTiltContact),
+    frontKneeContact: arr.map(e=>e.frontKneeContact),
+    headDrift: arr.map(e=>e.headDrift),
+  };
+
+  // score every metric by how far off baseline it is
+  const scored = [];
+  Object.keys(DRILL_DB).forEach(key=>{
+    if(key === 'sequencing') return; // binary, handled separately
+    const stats = meanStd(baselineVals[key]);
+    if(!Number.isFinite(current[key])) return;
+    const scale = (stats.n >= 3 && stats.std > 0.5) ? stats.std : DRILL_DB[key].fallbackScale;
+    const diff = current[key] - stats.mean;
+    const score = Math.abs(diff) / scale;
+    scored.push({key, diff, mean:stats.mean, current:current[key], score, n:stats.n});
+  });
+  scored.sort((a,b)=>b.score-a.score);
+
+  const inOrderCount = arr.filter(e=>e.inOrder).length;
+  const seqFlagged = lastMetrics.inOrder === false;
+
+  const FOCUS_THRESHOLD = 0.9;
+  const focus = scored.filter(s=>s.score >= FOCUS_THRESHOLD);
+  const onTarget = scored.filter(s=>s.score < FOCUS_THRESHOLD);
+
+  // build a checkbox menu for one metric's drills
+  function drillMenu(key){
+    return DRILL_DB[key].drills.map((dr,i)=>{
+      const id = `drill_${key}_${i}`;
+      const checked = selectedDrills.has(id) ? 'checked' : '';
+      return `
+        <label class="drill-pick" for="${id}">
+          <input type="checkbox" id="${id}" data-drill-id="${id}" ${checked}>
+          <span>
+            <span class="drill-name">${dr.name}</span><span class="drill-source">${dr.source}</span>
+            <span class="drill-desc">${dr.desc}</span>
+          </span>
+        </label>`;
+    }).join('');
+  }
+
+  let focusHtml = '';
+
+  if(seqFlagged){
+    focusHtml += `
+      <div class="focus-card">
+        <div class="focus-head">
+          <h3>${DRILL_DB.sequencing.label}</h3>
+          <span class="focus-stat">Out of sequence — ${inOrderCount}/${arr.length} baseline swings correct</span>
+        </div>
+        <div class="focus-note">Torso is peaking before (or with) the pelvis instead of after it. Pick any drills to add:</div>
+        ${drillMenu('sequencing')}
+      </div>`;
+  }
+
+  focus.forEach(s=>{
+    const dir = s.diff >= 0 ? 'above' : 'below';
+    focusHtml += `
+      <div class="focus-card">
+        <div class="focus-head">
+          <h3>${DRILL_DB[s.key].label}</h3>
+          <span class="focus-stat">${fmt(s.current,1)}${DRILL_DB[s.key].unit} vs ${fmt(s.mean,1)}${DRILL_DB[s.key].unit} avg (${fmt(Math.abs(s.diff),1)}${DRILL_DB[s.key].unit} ${dir})</span>
+        </div>
+        <div class="focus-note">${s.n < 3 ? 'Ranked against a small baseline — add more swings for a sharper read. Pick any drills to add:' : `${fmt(s.score,1)}x your baseline's typical spread. Pick any drills to add:`}</div>
+        ${drillMenu(s.key)}
+      </div>`;
+  });
+
+  if(!focusHtml){
+    focusHtml = `<div class="chart-card"><div class="label">Nothing flagged</div><div class="sub">This swing is close to your baseline across the board. You can still browse drills for any metric below if you'd like.</div></div>`;
+  }
+
+  // also offer drills for on-target metrics, collapsed under a browse-all note
+  let browseHtml = onTarget.map(s=>`
+    <div class="focus-card" style="border-color:var(--line);">
+      <div class="focus-head">
+        <h3>${DRILL_DB[s.key].label}</h3>
+        <span class="focus-stat" style="color:var(--grass);">On target — ${fmt(s.current,1)}${DRILL_DB[s.key].unit} vs ${fmt(s.mean,1)}${DRILL_DB[s.key].unit} avg</span>
+      </div>
+      <div class="focus-note">Not flagged, but here are the drills if you want them:</div>
+      ${drillMenu(s.key)}
+    </div>`).join('');
+  if(!seqFlagged){
+    browseHtml += `
+      <div class="focus-card" style="border-color:var(--line);">
+        <div class="focus-head">
+          <h3>${DRILL_DB.sequencing.label}</h3>
+          <span class="focus-stat" style="color:var(--grass);">On target — pelvis leads torso</span>
+        </div>
+        <div class="focus-note">Not flagged, but here are the drills if you want them:</div>
+        ${drillMenu('sequencing')}
+      </div>`;
+  }
+
+  document.getElementById('drillsFocusList').innerHTML = focusHtml;
+  document.getElementById('drillsOnTarget').innerHTML = browseHtml || `<div class="on-target-row" style="color:var(--text-faint);">Nothing here this time.</div>`;
+
+  // wire up every checkbox to update the selection + routine
+  document.querySelectorAll('[data-drill-id]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      if(cb.checked) selectedDrills.add(cb.dataset.drillId);
+      else selectedDrills.delete(cb.dataset.drillId);
+      rebuildRoutine(fmt);
+    });
+  });
+
+  rebuildRoutine(fmt);
+}
+
+// resolve a drill id back to its {label, drill} for routine text
+function resolveDrill(id){
+  const m = id.match(/^drill_(.+)_(\d+)$/);
+  if(!m) return null;
+  const key = m[1], idx = Number(m[2]);
+  const group = DRILL_DB[key];
+  if(!group || !group.drills[idx]) return null;
+  return {metric: group.label, ...group.drills[idx]};
+}
+
+function rebuildRoutine(fmt){
+  const chosen = [...selectedDrills].map(resolveDrill).filter(Boolean);
+  const box = document.getElementById('routineBox');
+  const countEl = document.getElementById('routineCount');
+  countEl.textContent = chosen.length ? `${chosen.length} drill${chosen.length===1?'':'s'} selected` : 'none selected yet';
+
+  if(chosen.length === 0){
+    box.innerHTML = `<div class="sub">Check off any drills above and they'll collect here as your routine.</div>`;
+    window.__currentRoutineText = '';
+    return;
+  }
+
+  // group chosen drills by metric
+  const byMetric = {};
+  chosen.forEach(d=>{ (byMetric[d.metric] = byMetric[d.metric] || []).push(d); });
+
+  box.innerHTML = Object.entries(byMetric).map(([metric, drills])=>`
+    <div style="margin-bottom:14px;">
+      <div class="label" style="margin-bottom:8px;">${metric}</div>
+      ${drills.map(d=>`
+        <div class="drill-item">
+          <span class="drill-name">${d.name}</span><span class="drill-source">${d.source}</span>
+          <div class="drill-desc">${d.desc}</div>
+        </div>`).join('')}
+    </div>`).join('');
+
+  const lines = ['Swing Lab — My Drill Routine', ''];
+  Object.entries(byMetric).forEach(([metric, drills])=>{
+    lines.push(metric.toUpperCase());
+    drills.forEach(d=>lines.push(`  - ${d.name} (${d.source}): ${d.desc}`));
+    lines.push('');
+  });
+  window.__currentRoutineText = lines.join('\n');
+}
+
+document.getElementById('copyRoutineBtn').addEventListener('click', async ()=>{
+  const text = window.__currentRoutineText || '';
+  if(!text){ return; }
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(e){
+    console.warn('Clipboard write failed:', e);
+  }
+  const confirm = document.getElementById('copyRoutineConfirm');
+  confirm.classList.add('show');
+  setTimeout(()=>confirm.classList.remove('show'), 1800);
+});
+
+document.getElementById('clearRoutineBtn').addEventListener('click', ()=>{
+  selectedDrills.clear();
+  renderDrillsTab();
+});
+
+// ---------- tab switching ----------
+document.getElementById('mainTabs').querySelectorAll('button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.getElementById('mainTabs').querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('analyzeTab').style.display = tab==='analyze' ? 'block' : 'none';
+    document.getElementById('baselineTab').style.display = tab==='baseline' ? 'block' : 'none';
+    document.getElementById('clientsTab').style.display = tab==='clients' ? 'block' : 'none';
+    document.getElementById('drillsTab').style.display = tab==='drills' ? 'block' : 'none';
+    if(tab === 'baseline') renderBaselineTab();
+    if(tab === 'clients') renderClientsTab();
+    if(tab === 'drills') renderDrillsTab();
+  });
+});
+
+renderBaselineTab();
+renderClientsTab();
+
+</script>
+</body>
+</html>
